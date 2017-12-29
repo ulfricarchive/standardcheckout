@@ -1,4 +1,4 @@
-package com.standardcheckout.web;
+package com.standardcheckout.web.webstore;
 
 import java.util.UUID;
 

@@ -1,4 +1,4 @@
-package com.standardcheckout.web;
+package com.standardcheckout.web.ui;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;

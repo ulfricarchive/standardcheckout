@@ -1,18 +1,26 @@
-package com.standardcheckout.web;
+package com.standardcheckout.web.ui;
 
 import java.util.UUID;
 
 import javax.inject.Inject;
 
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.util.StringUtils;
+import org.vaadin.textfieldformatter.CreditCardFieldFormatter;
 
 import com.standardcheckout.web.helper.EnvironmentHelper;
 import com.standardcheckout.web.helper.StringHelper;
 import com.standardcheckout.web.jclouds.BlobStoreService;
 import com.standardcheckout.web.mojang.MojangService;
+import com.standardcheckout.web.stripe.CardType;
+import com.standardcheckout.web.stripe.Country;
 import com.standardcheckout.web.stripe.StripeService;
+import com.standardcheckout.web.vaadin.addons.CardTypeResource;
+import com.standardcheckout.web.vaadin.addons.CountryFlagResource;
+import com.standardcheckout.web.vaadin.addons.Tip;
+import com.standardcheckout.web.webstore.MinecraftCustomer;
 import com.standardcheckout.web.webstore.Webstore;
 import com.standardcheckout.web.webstore.WebstoreService;
 import com.vaadin.annotations.Title;
@@ -24,6 +32,7 @@ import com.vaadin.spring.annotation.SpringUI;
 import com.vaadin.ui.Alignment;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.CheckBox;
+import com.vaadin.ui.ComboBox;
 import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.Image;
 import com.vaadin.ui.Label;
@@ -170,12 +179,42 @@ public class StoreUI extends ScoUI {
 		emailField.setRequiredIndicatorVisible(true);
 		sendComponentMiddle(emailField);
 
+		HorizontalLayout cardFields = new HorizontalLayout();
+		cardFields.setMargin(false);
+		cardFields.setSpacing(false);
+		cardFields.addStyleName(ValoTheme.LAYOUT_COMPONENT_GROUP);
+
 		TextField cardNumberField = new TextField("Card Number");
+		cardNumberField.setWidth("100%");
 		cardNumberField.setMaxLength(19);
-		cardNumberField.setPlaceholder("4242 4242 4242 4242");
+		cardNumberField.setPlaceholder("•••• •••• •••• ••••");
 		cardNumberField.setId("card-number");
 		cardNumberField.setRequiredIndicatorVisible(true);
-		sendComponentMiddle(cardNumberField);
+		cardNumberField.addStyleName("vertical");
+		new CreditCardFieldFormatter(cardNumberField);
+
+		Image cardTypeLabel = new Image();
+		cardTypeLabel.setSource(new CardTypeResource(null));
+		cardTypeLabel.setWidth("40px");
+		cardTypeLabel.setHeight("40px");
+
+		MutableObject<CardType> type = new MutableObject<>();
+		cardNumberField.addValueChangeListener(ignore -> {
+			CardType currentType = CardType.detect(cardNumberField.getValue());
+			if (currentType == type.getValue()) {
+				return;
+			}
+
+			type.setValue(currentType);
+			cardTypeLabel.setSource(new CardTypeResource(currentType));
+		});
+
+		cardFields.addComponents(cardNumberField, cardTypeLabel);
+		cardFields.setComponentAlignment(cardTypeLabel, Alignment.BOTTOM_CENTER);
+		cardFields.setExpandRatio(cardNumberField, 9);
+		cardFields.setExpandRatio(cardTypeLabel, 1);
+
+		sendComponentMiddle(cardFields);
 
 		HorizontalLayout extraCardFields = new HorizontalLayout();
 
@@ -209,6 +248,26 @@ public class StoreUI extends ScoUI {
 		extraCardFields.setExpandRatio(cvvField, 1);
 		sendComponentMiddle(extraCardFields);
 
+		HorizontalLayout locationFields = new HorizontalLayout();
+
+		ComboBox<Country> countryField = new ComboBox<>("Country");
+		countryField.setWidth("100%");
+		countryField.setItems(Country.values());
+		countryField.setRequiredIndicatorVisible(true);
+		countryField.setItemCaptionGenerator(Country::getFriendlyName);
+		countryField.setItemIconGenerator(CountryFlagResource::new);
+
+		TextField zipCodeField = new TextField("Zip Code");
+		zipCodeField.setId("zipcode");
+		zipCodeField.setWidth("100%");
+		zipCodeField.setRequiredIndicatorVisible(true);
+
+		locationFields.addComponents(countryField, zipCodeField);
+		locationFields.setExpandRatio(countryField, 5);
+		locationFields.setExpandRatio(zipCodeField, 3);
+
+		sendComponentMiddle(locationFields);
+
 		VerticalLayout popupContent = new VerticalLayout();
 		popupContent.setMargin(true);
 		PopupView popup = new PopupView(null, popupContent);
@@ -237,7 +296,7 @@ public class StoreUI extends ScoUI {
 
 		sendComponentMiddle(termsOfServiceField);
 
-		sendFriendlyButtonMiddle("Save", click -> {
+		Button save = sendFriendlyButtonMiddle("Save", click -> {
 			if (!Boolean.TRUE.equals(termsOfServiceField.getValue())) {
 				sendError(termsOfServiceField, "You must agree to the Terms of Service");
 				return;
@@ -282,8 +341,11 @@ public class StoreUI extends ScoUI {
 				return;
 			}
 
-			
+			click.getButton().setEnabled(false);
+			// TODO save logic
+			click.getButton().setEnabled(true);
 		});
+		save.setDisableOnClick(false);
 		sendComponentUpper(new Tip("Your card data will be stored with Stripe"));
 	}
 

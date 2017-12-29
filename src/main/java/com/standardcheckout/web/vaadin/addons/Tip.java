@@ -1,4 +1,4 @@
-package com.standardcheckout.web;
+package com.standardcheckout.web.vaadin.addons;
 
 import com.vaadin.ui.Alignment;
 import com.vaadin.ui.HorizontalLayout;
