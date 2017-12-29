@@ -30,13 +30,22 @@ public class StripeServiceImpl implements StripeService {
 		//Stripe.clientId = getClientId(); // TODO CHANGE BACK
 		Stripe.apiKey = "sk_test_Ty4j6Dg2VN8pomFxTE55TDUR";
 		Stripe.clientId = "ca_C1utFg1gieuA6KjrwjfOjnHqiYdjOcmv";
-		
 	}
 
 	@Override
 	public Customer createCustomer(Map<String, Object> customer) {
 		try {
 			return Customer.create(customer, requestOptions());
+		} catch (AuthenticationException | InvalidRequestException | APIConnectionException | CardException | APIException exception) {
+			exception.printStackTrace(); // TODO error handling
+			return null;
+		}
+	}
+
+	@Override
+	public Customer getCustomer(String customerId) {
+		try {
+			return Customer.retrieve(customerId, requestOptions());
 		} catch (AuthenticationException | InvalidRequestException | APIConnectionException | CardException | APIException exception) {
 			exception.printStackTrace(); // TODO error handling
 			return null;
@@ -64,6 +73,17 @@ public class StripeServiceImpl implements StripeService {
 		} catch (AuthenticationException | InvalidRequestException exception) {
 			exception.printStackTrace(); // TODO error handling
 			return null;
+		}
+	}
+
+	@Override
+	public boolean updateCustomer(Customer customer, Map<String, Object> patch) {
+		try {
+			return customer.update(patch, requestOptions()) != null;
+		} catch (AuthenticationException | InvalidRequestException | APIConnectionException | CardException
+				| APIException exception) {
+			exception.printStackTrace();
+			return false;
 		}
 	}
 

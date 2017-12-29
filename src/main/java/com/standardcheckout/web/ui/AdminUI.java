@@ -1,7 +1,6 @@
 package com.standardcheckout.web.ui;
 
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import javax.inject.Inject;
@@ -15,12 +14,12 @@ import com.standardcheckout.web.webstore.Webstore;
 import com.standardcheckout.web.webstore.WebstoreService;
 import com.vaadin.annotations.Title;
 import com.vaadin.server.VaadinRequest;
-import com.vaadin.shared.Position;
 import com.vaadin.spring.annotation.SpringUI;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Label;
-import com.vaadin.ui.Notification;
+import com.vaadin.ui.TextArea;
 import com.vaadin.ui.TextField;
+import com.vaadin.ui.themes.ValoTheme;
 
 @Title("Standard Checkout")
 @SpringUI(path = "admin")
@@ -45,7 +44,7 @@ public class AdminUI extends ScoUI {
 	}
 
 	private void flowWebstore() {
-		requestInput("webstore", "Webstore", webstoreField -> {
+		requestInput("webstore", "Webstore", 20, webstoreField -> {
 			String value = webstoreField.getValue();
 			if (StringUtils.isEmpty(value)) {
 				sendError(webstoreField, "You must enter a webstore name");
@@ -92,6 +91,7 @@ public class AdminUI extends ScoUI {
 						Webstore created = new Webstore();
 						created.setStoreId(webstoreId);
 						created.setPassword(encoder.encode(value));
+						created.setAuthorizationId(UUID.randomUUID());
 						webstores.saveWebstore(created);
 
 						return () -> flowLoggedIn(created);
@@ -100,8 +100,13 @@ public class AdminUI extends ScoUI {
 			return;
 		}
 
-		if (existing.getStoreId() == null) {
+		if (StringUtils.isEmpty(existing.getStoreId())) {
 			existing.setStoreId(webstoreId);
+			webstores.saveWebstore(existing);
+		}
+
+		if (existing.getAuthorizationId() == null) {
+			existing.setAuthorizationId(UUID.randomUUID());
 			webstores.saveWebstore(existing);
 		}
 
@@ -171,9 +176,23 @@ public class AdminUI extends ScoUI {
 
 	protected void flowSettings(Webstore webstore) {
 		Label settings = new Label("Settings");
-		sendComponentMiddle(settings);
+		settings.addStyleName(ValoTheme.LABEL_LARGE);
+
 		TextField logoUrl = new TextField("Logo URL");
+		logoUrl.setMaxLength(300);
+
+		TextField friendlyName = new TextField("Friendly Name");
+		friendlyName.setMaxLength(32);
+		friendlyName.setPlaceholder("Pizza Craft");
+
+		TextArea termsOfService = new TextArea("Terms of Service");
+		termsOfService.setMaxLength(8_000);
+
+		sendComponentMiddle(settings);
+		sendComponentMiddle(friendlyName);
 		sendComponentMiddle(logoUrl);
+		sendComponentMiddle(termsOfService);
+
 		Button button = sendFriendlyButtonMiddle("Save", click -> {
 			String logoUrlValue = logoUrl.getValue();
 			if (!StringUtils.isEmpty(logoUrlValue)) {
@@ -187,14 +206,35 @@ public class AdminUI extends ScoUI {
 				webstore.setLogoUrl(null);
 			}
 
+			String friendlyNameValue = friendlyName.getValue();
+			if (!StringUtils.isEmpty(friendlyNameValue)) {
+				friendlyNameValue = friendlyNameValue.trim();
+				if (!org.apache.commons.lang3.StringUtils.isAlphanumericSpace(friendlyNameValue)) {
+					sendError(logoUrl, "Friendly Name must only contain letters, numbers, and spaces");
+					return;
+				}
+				webstore.setFriendlyName(StringUtils.isEmpty(friendlyNameValue) ? null : friendlyNameValue);
+			} else {
+				webstore.setLogoUrl(null);
+			}
+
+			String termsOfServiceValue = termsOfService.getValue();
+			if (!StringUtils.isEmpty(termsOfServiceValue)) {
+				termsOfServiceValue = termsOfServiceValue.trim();
+				if (!org.apache.commons.lang3.StringUtils.isAsciiPrintable(friendlyNameValue)) {
+					sendError(logoUrl, "Terms of Service must be ascii printable");
+					return;
+				}
+				webstore.setTermsOfService(StringUtils.isEmpty(termsOfServiceValue) ? null : termsOfServiceValue);
+			} else {
+				webstore.setTermsOfService(null);
+			}
+
 			click.getButton().setEnabled(false);
 
 			webstores.saveWebstore(webstore);
 
-			Notification notification = new Notification("Webstore saved", Notification.Type.HUMANIZED_MESSAGE);
-			notification.setPosition(Position.TOP_CENTER);
-			notification.setDelayMsec((int) TimeUnit.SECONDS.toMillis(3));
-			notification.show(getPage());
+			sendSuccessNotice("Webstore updated");
 
 			click.getButton().setEnabled(true);
 		});

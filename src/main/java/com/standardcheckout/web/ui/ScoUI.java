@@ -12,19 +12,23 @@ import javax.servlet.http.Cookie;
 import org.springframework.util.StringUtils;
 
 import com.vaadin.annotations.Theme;
+import com.vaadin.icons.VaadinIcons;
 import com.vaadin.server.ErrorMessage;
 import com.vaadin.server.UserError;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.server.VaadinService;
 import com.vaadin.shared.Position;
+import com.vaadin.shared.ui.ContentMode;
 import com.vaadin.ui.AbstractComponent;
 import com.vaadin.ui.Alignment;
 import com.vaadin.ui.Button;
+import com.vaadin.ui.CheckBox;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.GridLayout;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.Notification;
 import com.vaadin.ui.PasswordField;
+import com.vaadin.ui.PopupView;
 import com.vaadin.ui.TextField;
 import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
@@ -65,7 +69,7 @@ public abstract class ScoUI extends UI {
 		root.setComponentAlignment(buttonLayout, Alignment.MIDDLE_CENTER);
 	}
 
-	private void clearCenter() {
+	protected void clearCenter() {
 		center.removeAllComponents();
 	}
 
@@ -73,12 +77,13 @@ public abstract class ScoUI extends UI {
 		return (VerticalLayout) root.getComponent(x, z);
 	}
 
-	protected void requestInput(String parameter, String title, Function<TextField, Runnable> listener) {
-		requestInput(parameter, title, null, listener);
+	protected void requestInput(String parameter, String title, int maxLength, Function<TextField, Runnable> listener) {
+		requestInput(parameter, title, null, maxLength, listener);
 	}
 
-	protected void requestInput(String parameter, String title, String placeholder, Function<TextField, Runnable> listener) {
+	protected void requestInput(String parameter, String title, String placeholder, int maxLength, Function<TextField, Runnable> listener) {
 		TextField field = new TextField(title);
+		field.setMaxLength(maxLength);
 
 		String existingValue = getOption(parameter);
 		if (!StringUtils.isEmpty(existingValue)) {
@@ -173,6 +178,10 @@ public abstract class ScoUI extends UI {
 		ErrorMessage message = new UserError(error);
 		component.setComponentError(message);
 
+		sendError(error);
+	}
+
+	protected void sendError(String error) {
 		Notification notification = new Notification(error, Notification.Type.ERROR_MESSAGE);
 		notification.setPosition(Position.TOP_CENTER);
 		notification.setDelayMsec((int) TimeUnit.SECONDS.toMillis(5));
@@ -233,6 +242,44 @@ public abstract class ScoUI extends UI {
 		cookie.setMaxAge(0);
 		cookie.setPath("/");
 		VaadinService.getCurrentResponse().addCookie(cookie);
+	}
+
+	protected CheckBox sendTermsOfService(String terms) {
+		VerticalLayout popupContent = new VerticalLayout();
+		popupContent.setMargin(true);
+		PopupView popup = new PopupView(null, popupContent);
+		popup.setHideOnMouseOut(false);
+		popup.setWidth("100%");
+		getGridSection(1, 0).addComponent(popup);
+
+		Button close = new Button(VaadinIcons.CLOSE);
+		close.addStyleName(ValoTheme.BUTTON_DANGER);
+		close.addClickListener(click -> popup.setPopupVisible(false));
+
+		Label termsLabel = new Label(terms);
+		termsLabel.setContentMode(ContentMode.PREFORMATTED);
+
+		popupContent.addComponents(close, termsLabel);
+		popupContent.setComponentAlignment(close, Alignment.MIDDLE_CENTER);
+
+		CheckBox termsOfServiceField = new CheckBox("I agree to the Terms and Conditions");
+
+		termsOfServiceField.addValueChangeListener(change -> {
+			if (!Boolean.TRUE.equals(change.getOldValue())) {
+				popup.setPopupVisible(true);
+			}
+		});
+
+		sendComponentMiddle(termsOfServiceField);
+		return termsOfServiceField;
+	}
+
+	protected Notification sendSuccessNotice(String message) {
+		Notification notification = new Notification(message, Notification.Type.ASSISTIVE_NOTIFICATION);
+		notification.setPosition(Position.TOP_CENTER);
+		notification.setDelayMsec((int) TimeUnit.SECONDS.toMillis(3));
+		notification.show(getPage());
+		return notification;
 	}
 
 }

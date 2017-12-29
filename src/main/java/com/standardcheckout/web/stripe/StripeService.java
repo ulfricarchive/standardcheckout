@@ -16,4 +16,8 @@ public interface StripeService {
 
 	Customer createCustomer(Map<String, Object> customer);
 
+	Customer getCustomer(String customerId);
+
+	boolean updateCustomer(Customer customer, Map<String, Object> patch);
+
 }
