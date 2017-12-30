@@ -13,9 +13,11 @@ import com.standardcheckout.web.stripe.StripeService;
 import com.standardcheckout.web.webstore.Webstore;
 import com.standardcheckout.web.webstore.WebstoreService;
 import com.vaadin.annotations.Title;
+import com.vaadin.icons.VaadinIcons;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.spring.annotation.SpringUI;
 import com.vaadin.ui.Button;
+import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.TextArea;
 import com.vaadin.ui.TextField;
@@ -92,6 +94,7 @@ public class AdminUI extends ScoUI {
 						created.setStoreId(webstoreId);
 						created.setPassword(encoder.encode(value));
 						created.setAuthorizationId(UUID.randomUUID());
+						created.setToken(generateToken());
 						webstores.saveWebstore(created);
 
 						return () -> flowLoggedIn(created);
@@ -185,12 +188,30 @@ public class AdminUI extends ScoUI {
 		friendlyName.setMaxLength(32);
 		friendlyName.setPlaceholder("Pizza Craft");
 
+		HorizontalLayout token = new HorizontalLayout();
+
+		TextField tokenData = new TextField("Token");
+		tokenData.setWidth("100%");
+		tokenData.setEnabled(false);
+		tokenData.setValue(webstore.getToken());
+
+		Button tokenButton = new Button();
+		tokenButton.setWidth("100%");
+		tokenButton.setIcon(VaadinIcons.TIME_FORWARD);
+		tokenButton.addStyleName(ValoTheme.BUTTON_ICON_ONLY);
+		tokenButton.addClickListener(click -> tokenData.setValue(generateToken()));
+
+		token.addComponents(tokenData, tokenButton);
+		token.setExpandRatio(tokenData, 9);
+		token.setExpandRatio(tokenButton, 1);
+
 		TextArea termsOfService = new TextArea("Terms of Service");
 		termsOfService.setMaxLength(8_000);
 
 		sendComponentMiddle(settings);
 		sendComponentMiddle(friendlyName);
 		sendComponentMiddle(logoUrl);
+		sendComponentMiddle(token);
 		sendComponentMiddle(termsOfService);
 
 		Button button = sendFriendlyButtonMiddle("Save", click -> {
@@ -243,6 +264,10 @@ public class AdminUI extends ScoUI {
 
 	private String randomState() {
 		return UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+	}
+
+	private String generateToken() {
+		return (UUID.randomUUID() + "" + UUID.randomUUID()).replace("-", "");
 	}
 
 }

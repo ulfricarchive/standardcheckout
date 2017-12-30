@@ -22,6 +22,7 @@ public class Webstore extends PasswordProtected {
 	private UUID authorizationId;
 	private String termsOfService;
 	private String friendlyName;
+	private String token;
 
 	public String getTheme() {
 		return theme;
@@ -77,6 +78,14 @@ public class Webstore extends PasswordProtected {
 
 	public void setFriendlyName(String friendlyName) {
 		this.friendlyName = friendlyName;
+	}
+
+	public String getToken() {
+		return token;
+	}
+
+	public void setToken(String token) {
+		this.token = token;
 	}
 
 }

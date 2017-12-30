@@ -100,11 +100,38 @@ public class StoreUI extends ScoUI {
 
 	private void flowHome() {
 		Label label = new Label("StandardCheckout is made by Ulfric, LLC. "
-				+ "We're currently in BETA. "
-				+ "If you'd like to add StandardCheckout to your server's store, "
+				+ "The application is currently in an invite-only BETA. "
+				+ "If you'd like to add SCO to your server's store, "
 				+ "send us an email at billing@ulfric.com");
 		label.setSizeFull();
+		label.addStyleName(ValoTheme.LABEL_LARGE);
 		center.addComponent(label);
+
+		questionAndAnswer("Pricing", "3% or $0.10 from each transaction, whichever is higher, capped at 30% of the transaction. " +
+				"Examples: $10 purchase = $0.30 fee.  $1 purchase = $0.10. $0.15 purchase = $0.045 (rounded up to $0.05) fee.");
+		questionAndAnswer("How is card data stored?", "Card data is not stored on our servers. We use Stripe for tokenization.");
+		questionAndAnswer("Do you compete with Buycraft?", "No. SCO is an extension to the Buycraft platform - it's a dependency.");
+		questionAndAnswer("How does it work?", "Say you want to sell an item in-game, like a crate key. " +
+				"Ideally the purchasing player would just click the key in the crate, and maybe a confirmation button. " +
+				"Our mission is to make that happen. The first time a player makes a purchase through SCO, they'll be " +
+				"directed to your webstore to add their card details. Then, back in-game, they can make all the purchases " +
+				"they want using their linked card. If the player already added their card on another server, they'll " +
+				"just need to authorize yours through your SCO webstore.");
+	}
+
+	private void questionAndAnswer(String question, String answer) {
+		Label answerLabel = new Label(answer);
+		answerLabel.setVisible(false);
+
+		Button button = new Button(question);
+		button.addStyleName(ValoTheme.BUTTON_BORDERLESS_COLORED);
+
+		button.addClickListener(click -> answerLabel.setVisible(!answerLabel.isVisible()));
+
+		sendComponentMiddle(button);
+		sendComponentMiddle(answerLabel);
+
+		answerLabel.setWidth("90%");
 	}
 
 	private void flowUsername() {

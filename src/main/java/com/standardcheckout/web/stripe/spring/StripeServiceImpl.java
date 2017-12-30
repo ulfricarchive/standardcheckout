@@ -1,5 +1,7 @@
 package com.standardcheckout.web.stripe.spring;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -8,6 +10,7 @@ import javax.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
 
 import com.standardcheckout.web.helper.EnvironmentHelper;
+import com.standardcheckout.web.stripe.ChargeDetails;
 import com.standardcheckout.web.stripe.StripeService;
 import com.stripe.Stripe;
 import com.stripe.exception.APIConnectionException;
@@ -16,7 +19,9 @@ import com.stripe.exception.AuthenticationException;
 import com.stripe.exception.CardException;
 import com.stripe.exception.InvalidRequestException;
 import com.stripe.exception.oauth.OAuthException;
+import com.stripe.model.Charge;
 import com.stripe.model.Customer;
+import com.stripe.model.Token;
 import com.stripe.model.oauth.TokenResponse;
 import com.stripe.net.OAuth;
 import com.stripe.net.RequestOptions;
@@ -84,6 +89,55 @@ public class StripeServiceImpl implements StripeService {
 				| APIException exception) {
 			exception.printStackTrace();
 			return false;
+		}
+	}
+
+	@Override
+	public Charge charge(String customerId, ChargeDetails details) {
+		RequestOptions options = requestOptions()
+				.toBuilder()
+				.setStripeAccount(details.getMerchantId())
+				.build();
+
+		String chargeToken = chargeToken(options, customerId);
+
+		Map<String, Object> parameters = new HashMap<>();
+		parameters.put("source", chargeToken);
+		parameters.put("currency", "usd");
+		parameters.put("amount", bigDecimalToStripe(details.getAmount()));
+		parameters.put("application_fee", bigDecimalToStripe(fee(details.getAmount())));
+		String descriptor = details.getItemName() + " on " + details.getServerName();
+		parameters.put("description", descriptor);
+		parameters.put("statement_descriptor", descriptor);
+
+		try {
+			return Charge.create(parameters, options);
+		} catch (AuthenticationException | InvalidRequestException | APIConnectionException | CardException
+				| APIException exception) {
+			exception.printStackTrace(); // TODO error handling
+			return null;
+		}
+	}
+
+	private BigDecimal fee(BigDecimal cost) {
+		BigDecimal percent = cost.multiply(BigDecimal.valueOf(0.03D));
+		BigDecimal cents = BigDecimal.valueOf(0.1D);
+		return percent.max(cents).min(cost.multiply(BigDecimal.valueOf(0.3D)));
+	}
+
+	private String bigDecimalToStripe(BigDecimal value) {
+		return value.setScale(2, RoundingMode.HALF_UP).movePointRight(2).toBigIntegerExact().toString();
+	}
+
+	private String chargeToken(RequestOptions options, String customerId) {
+		Map<String, Object> parameters = new HashMap<String, Object>();
+		parameters.put("customer", customerId);
+		try {
+			return Token.create(parameters, options).getId();
+		} catch (AuthenticationException | InvalidRequestException | APIConnectionException | CardException
+				| APIException exception) {
+			exception.printStackTrace(); // TODO error handling
+			return null;
 		}
 	}
 

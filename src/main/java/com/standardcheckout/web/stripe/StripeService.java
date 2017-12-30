@@ -2,6 +2,7 @@ package com.standardcheckout.web.stripe;
 
 import java.util.Map;
 
+import com.stripe.model.Charge;
 import com.stripe.model.Customer;
 
 public interface StripeService {
@@ -19,5 +20,7 @@ public interface StripeService {
 	Customer getCustomer(String customerId);
 
 	boolean updateCustomer(Customer customer, Map<String, Object> patch);
+
+	Charge charge(String customerId, ChargeDetails details);
 
 }
