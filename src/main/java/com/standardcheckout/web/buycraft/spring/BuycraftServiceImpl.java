@@ -34,7 +34,7 @@ public class BuycraftServiceImpl implements BuycraftService {
 	private static final String URL = "https://plugin.buycraft.net/";
 	private final Cache<String, Listing> listings = CacheBuilder.newBuilder()
 				.concurrencyLevel(5)
-				.expireAfterWrite(15, TimeUnit.MINUTES)
+				.expireAfterWrite(20, TimeUnit.MINUTES)
 				.build();
 
 	private RestTemplate restTemplate = new RestTemplate();

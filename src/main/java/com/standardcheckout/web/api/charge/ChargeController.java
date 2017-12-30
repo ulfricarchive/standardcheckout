@@ -21,7 +21,7 @@ import com.standardcheckout.web.webstore.MinecraftCustomer;
 import com.standardcheckout.web.webstore.Webstore;
 import com.standardcheckout.web.webstore.WebstoreService;
 import com.stripe.model.Charge;
-import com.ulfric.buycraft.sco.model.StandardCheckoutChargeError;
+import com.ulfric.buycraft.sco.model.StandardCheckoutError;
 import com.ulfric.buycraft.sco.model.StandardCheckoutChargeRequest;
 import com.ulfric.buycraft.sco.model.StandardCheckoutChargeResponse;
 
@@ -47,38 +47,38 @@ public class ChargeController {
 		StandardCheckoutChargeResponse response = new StandardCheckoutChargeResponse();
 
 		if (StringUtils.isEmpty(charge.getBuycraftToken())) {
-			response.setError(StandardCheckoutChargeError.MISSING_BUYCRAFT_TOKEN);
+			response.setError(StandardCheckoutError.MISSING_BUYCRAFT_TOKEN);
 			return response;
 		}
 
 		if (StringUtils.isEmpty(charge.getScoToken())) {
-			response.setError(StandardCheckoutChargeError.MISSING_SCO_TOKEN);
+			response.setError(StandardCheckoutError.MISSING_SCO_TOKEN);
 			return response;
 		}
 
 		if (StringUtils.isEmpty(charge.getWebstoreId())) {
-			response.setError(StandardCheckoutChargeError.MISSING_WEBSTORE_ID);
+			response.setError(StandardCheckoutError.MISSING_WEBSTORE_ID);
 			return response;
 		}
 
 		if (charge.getCart() == null) {
-			response.setError(StandardCheckoutChargeError.MISSING_CART);
+			response.setError(StandardCheckoutError.MISSING_CART);
 			return response;
 		}
 
 		if (charge.getPurchaser() == null) {
-			response.setError(StandardCheckoutChargeError.MISSING_PURCHASER);
+			response.setError(StandardCheckoutError.MISSING_PURCHASER);
 			return response;
 		}
 
 		Webstore webstore = webstores.getWebstore(charge.getWebstoreId());
 		if (webstore == null) {
-			response.setError(StandardCheckoutChargeError.INVALID_WEBSTORE);
+			response.setError(StandardCheckoutError.INVALID_WEBSTORE);
 			return response;
 		}
 
 		if (!Objects.equals(webstore.getToken(), charge.getScoToken())) {
-			response.setError(StandardCheckoutChargeError.INCORRECT_SCO_TOKEN); // TODO rate limit
+			response.setError(StandardCheckoutError.INCORRECT_SCO_TOKEN); // TODO rate limit
 			return response;
 		}
 
@@ -92,7 +92,7 @@ public class ChargeController {
 
 		ManualPaymentPlan plan = buycraft.asManualPayments(charge.getCart(), charge.getBuycraftToken());
 		if (plan == null || BigDecimal.ZERO.compareTo(plan.getTotalCost()) == 0) {
-			response.setError(StandardCheckoutChargeError.INCORRECT_BUYCRAFT_TOKEN);
+			response.setError(StandardCheckoutError.INCORRECT_BUYCRAFT_TOKEN);
 			return response;
 		}
 
@@ -103,7 +103,7 @@ public class ChargeController {
 		details.setItemName(charge.getItemName());
 		Charge stripeCharge = stripe.charge(customer.getStripeId(), details);
 		if (stripeCharge == null) {
-			response.setError(StandardCheckoutChargeError.PAYMENT_FAILED);
+			response.setError(StandardCheckoutError.PAYMENT_FAILED);
 			return response;
 		}
 

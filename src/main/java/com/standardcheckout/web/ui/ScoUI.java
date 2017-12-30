@@ -11,6 +11,7 @@ import javax.servlet.http.Cookie;
 
 import org.springframework.util.StringUtils;
 
+import com.standardcheckout.web.vaadin.addons.EnterShortcut;
 import com.vaadin.annotations.Theme;
 import com.vaadin.icons.VaadinIcons;
 import com.vaadin.server.ErrorMessage;
@@ -19,6 +20,7 @@ import com.vaadin.server.VaadinRequest;
 import com.vaadin.server.VaadinService;
 import com.vaadin.shared.Position;
 import com.vaadin.shared.ui.ContentMode;
+import com.vaadin.shared.ui.ValueChangeMode;
 import com.vaadin.ui.AbstractComponent;
 import com.vaadin.ui.Alignment;
 import com.vaadin.ui.Button;
@@ -100,7 +102,7 @@ public abstract class ScoUI extends UI {
 			field.setPlaceholder(placeholder);
 		}
 		sendComponentMiddle(field);
-		sendContinueButton(click -> {
+		Button button = sendContinueButton(click -> {
 			Runnable next = listener.apply(field);
 			if (next != null) {
 				clearCenter();
@@ -109,13 +111,14 @@ public abstract class ScoUI extends UI {
 				click.getButton().setEnabled(true);
 			}
 		});
+		field.addShortcutListener(new EnterShortcut("Continue", button::click));
 	}
 
-	protected void requestPassword(String title, Function<PasswordField, Runnable> listener) {
-		requestPassword(title, null, listener);
+	protected void requestPassword(String title, boolean needsConfirmation, Function<PasswordField, Runnable> listener) {
+		requestPassword(title, null, needsConfirmation, listener);
 	}
 
-	protected void requestPassword(String title, String hint, Function<PasswordField, Runnable> listener) {
+	protected void requestPassword(String title, String hint, boolean needsConfirmation, Function<PasswordField, Runnable> listener) {
 		PasswordField field = new PasswordField(title);
 		sendComponentMiddle(field);
 		if (!StringUtils.isEmpty(hint)) {
@@ -123,7 +126,21 @@ public abstract class ScoUI extends UI {
 			hintLabel.setHeight("50%");
 			sendComponentUpper(hintLabel);
 		}
-		sendContinueButton(click -> {
+		PasswordField confirmation = needsConfirmation ? new PasswordField("Confirm password") : null;
+		if (needsConfirmation) {
+			confirmation.setVisible(false);
+			sendComponentMiddle(confirmation);
+			field.setValueChangeMode(ValueChangeMode.EAGER);
+			field.addValueChangeListener(change -> confirmation.setVisible(true));
+		}
+		Button continueButton = sendContinueButton(click -> {
+			if (needsConfirmation && confirmation.isVisible()) {
+				if (!Objects.equals(field.getValue(), confirmation.getValue())) {
+					sendError(confirmation, "Password and confirmation must match");
+					click.getButton().setEnabled(true);
+					return;
+				}
+			}
 			Runnable next = listener.apply(field);
 			if (next != null) {
 				clearCenter();
@@ -132,6 +149,19 @@ public abstract class ScoUI extends UI {
 				click.getButton().setEnabled(true);
 			}
 		});
+		if (needsConfirmation) {
+			confirmation.addShortcutListener(new EnterShortcut("Continue", continueButton::click));
+		}
+		field.addShortcutListener(new EnterShortcut("Continue", () -> {
+			if (needsConfirmation) {
+				if (!confirmation.isVisible()) {
+					confirmation.setVisible(true);
+				}
+				confirmation.focus();
+			} else {
+				continueButton.click();
+			}
+		}));
 	}
 
 	protected Button sendContinueButton(Button.ClickListener listener) {

@@ -16,6 +16,7 @@ import com.vaadin.annotations.Title;
 import com.vaadin.icons.VaadinIcons;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.spring.annotation.SpringUI;
+import com.vaadin.ui.Alignment;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.Label;
@@ -83,7 +84,7 @@ public class AdminUI extends ScoUI {
 		if (existing == null || existing.getPassword() == null) {
 			requestPassword("Create a Webstore Password",
 					"Passwords must be at between 8 and 128 characters in length. This should NOT be the same as your Buycraft password!",
-					passwordField -> {
+					true, passwordField -> {
 						String value = passwordField.getValue();
 						if (!StringHelper.isInBounds(value, 8, 128)) {
 							sendError(passwordField, "Passwords must be between 8 and 128 characters");
@@ -113,7 +114,7 @@ public class AdminUI extends ScoUI {
 			webstores.saveWebstore(existing);
 		}
 
-		requestPassword("Webstore Password", passwordField -> {
+		requestPassword("Webstore Password", false, passwordField -> {
 			String value = passwordField.getValue();
 			if (StringUtils.isEmpty(value)) {
 				sendError(passwordField, "Your password is required");
@@ -197,13 +198,14 @@ public class AdminUI extends ScoUI {
 
 		Button tokenButton = new Button();
 		tokenButton.setWidth("100%");
-		tokenButton.setIcon(VaadinIcons.TIME_FORWARD);
+		tokenButton.setIcon(VaadinIcons.REFRESH);
 		tokenButton.addStyleName(ValoTheme.BUTTON_ICON_ONLY);
 		tokenButton.addClickListener(click -> tokenData.setValue(generateToken()));
 
 		token.addComponents(tokenData, tokenButton);
 		token.setExpandRatio(tokenData, 9);
-		token.setExpandRatio(tokenButton, 1);
+		token.setExpandRatio(tokenButton, 1.3F);
+		token.setComponentAlignment(tokenButton, Alignment.BOTTOM_CENTER);
 
 		TextArea termsOfService = new TextArea("Terms of Service");
 		termsOfService.setMaxLength(8_000);

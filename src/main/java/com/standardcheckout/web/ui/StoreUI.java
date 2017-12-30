@@ -34,6 +34,7 @@ import com.stripe.model.Customer;
 import com.vaadin.annotations.Title;
 import com.vaadin.server.ExternalResource;
 import com.vaadin.server.VaadinRequest;
+import com.vaadin.shared.ui.ValueChangeMode;
 import com.vaadin.spring.annotation.SpringUI;
 import com.vaadin.ui.Alignment;
 import com.vaadin.ui.Button;
@@ -150,7 +151,7 @@ public class StoreUI extends ScoUI {
 		if (player == null || StringUtils.isEmpty(player.getPassword())) {
 			requestPassword("Create a Standard Checkout Password",
 					"Passwords must be at between 8 and 128 characters in length. This should NOT be the same as your Minecraft password!",
-					passwordField -> {
+					true, passwordField -> {
 						String value = passwordField.getValue();
 						if (!StringHelper.isInBounds(value, 8, 128)) {
 							sendError(passwordField, "Passwords must be between 8 and 128 characters");
@@ -175,7 +176,7 @@ public class StoreUI extends ScoUI {
 			customers.saveCustomer(player);
 		}
 
-		requestPassword("Standard Checkout Password", passwordField -> {
+		requestPassword("Standard Checkout Password", false, passwordField -> {
 			String value = passwordField.getValue();
 			if (StringUtils.isEmpty(value)) {
 				sendError(passwordField, "Your password is required");
@@ -229,6 +230,7 @@ public class StoreUI extends ScoUI {
 		cardNumberField.setId("card-number");
 		cardNumberField.setRequiredIndicatorVisible(true);
 		cardNumberField.addStyleName("vertical");
+		cardNumberField.setValueChangeMode(ValueChangeMode.EAGER);
 		new CreditCardFieldFormatter(cardNumberField);
 
 		Image cardTypeLabel = new Image();
