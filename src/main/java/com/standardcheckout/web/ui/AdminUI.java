@@ -138,6 +138,7 @@ public class AdminUI extends ScoUI {
 		}
 
 		// TODO verify we still have stripe authorization
+		flowSettings(webstore);
 	}
 
 	protected void flowStripe(Webstore webstore) {

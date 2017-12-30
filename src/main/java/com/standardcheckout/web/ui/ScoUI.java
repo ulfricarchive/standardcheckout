@@ -249,7 +249,6 @@ public abstract class ScoUI extends UI {
 		name = "standardcheckout_" + name;
 		Cookie[] cookies = VaadinService.getCurrentRequest().getCookies();
 		if (cookies == null) {
-			System.out.println("No cookies");
 			return null;
 		}
 		for (Cookie cookie : cookies) {

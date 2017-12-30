@@ -102,7 +102,7 @@ public class StripeServiceImpl implements StripeService {
 		String chargeToken = chargeToken(options, customerId);
 
 		Map<String, Object> parameters = new HashMap<>();
-		parameters.put("source", chargeToken);
+		parameters.put("source", chargeToken == null ? customerId : chargeToken);
 		parameters.put("currency", "usd");
 		parameters.put("amount", bigDecimalToStripe(details.getAmount()));
 		parameters.put("application_fee", bigDecimalToStripe(fee(details.getAmount())));
@@ -132,6 +132,7 @@ public class StripeServiceImpl implements StripeService {
 	private String chargeToken(RequestOptions options, String customerId) {
 		Map<String, Object> parameters = new HashMap<String, Object>();
 		parameters.put("customer", customerId);
+
 		try {
 			return Token.create(parameters, options).getId();
 		} catch (AuthenticationException | InvalidRequestException | APIConnectionException | CardException

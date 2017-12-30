@@ -444,6 +444,7 @@ public class StoreUI extends ScoUI {
 			}
 
 			authorizedWebstores.add(webstore.getAuthorizationId());
+			customer.setAuthorizedWebstores(authorizedWebstores);
 			customers.saveCustomer(customer);
 			flowDashboard(customer);
 			Notification notification = sendSuccessNotice("Account created! You can head back to the game.");
