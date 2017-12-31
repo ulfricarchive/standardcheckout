@@ -2,6 +2,7 @@ package com.standardcheckout.web.ui;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -159,6 +160,7 @@ public class StoreUI extends ScoUI {
 						}
 
 						MinecraftCustomer createdPlayer = new MinecraftCustomer();
+						createdPlayer.setCreated(Instant.now());
 						createdPlayer.setMojangId(user);
 						createdPlayer.setPassword(encoder.encode(value));
 						createdPlayer.setBillingEnabled(true);

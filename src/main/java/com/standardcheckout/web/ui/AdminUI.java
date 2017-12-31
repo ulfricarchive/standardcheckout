@@ -1,5 +1,6 @@
 package com.standardcheckout.web.ui;
 
+import java.time.Instant;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -96,6 +97,7 @@ public class AdminUI extends ScoUI {
 						created.setPassword(encoder.encode(value));
 						created.setAuthorizationId(UUID.randomUUID());
 						created.setToken(generateToken());
+						created.setCreated(Instant.now());
 						webstores.saveWebstore(created);
 
 						return () -> flowLoggedIn(created);
