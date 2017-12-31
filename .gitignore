@@ -33,4 +33,4 @@ out/
 # Mac OS
 .DS_STORE
 
-secrets/
+src/main/resources/secrets.properties
