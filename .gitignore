@@ -32,3 +32,5 @@ out/
 
 # Mac OS
 .DS_STORE
+
+secrets/

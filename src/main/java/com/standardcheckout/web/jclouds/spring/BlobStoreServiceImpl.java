@@ -21,12 +21,7 @@ import com.standardcheckout.web.jclouds.BlobStoreService;
 @Service
 public class BlobStoreServiceImpl implements BlobStoreService {
 
-	private BlobStoreContext context = ContextBuilder.newBuilder(
-			EnvironmentHelper.getVariable("JCLOUDS_PROVIDER").orElse("transient"))
-			.credentials(
-					EnvironmentHelper.getVariable("JCLOUDS_USERNAME").orElse("username"),
-					EnvironmentHelper.getVariable("JCLOUDS_PASSWORD").orElse("password"))
-			.build(BlobStoreContext.class);
+	private BlobStoreContext context;
 
 	private String containerName = EnvironmentHelper.getVariable("JCLOUDS_LOCATION").orElse("standardcheckout");
 
@@ -34,6 +29,11 @@ public class BlobStoreServiceImpl implements BlobStoreService {
 
 	@PostConstruct
 	public void createBucket() {
+		ContextBuilder builder = ContextBuilder.newBuilder(EnvironmentHelper.getVariable("JCLOUDS_PROVIDER").orElse("transient"));
+		EnvironmentHelper.getVariable("JCLOUDS_USERNAME").ifPresent(username ->
+			builder.credentials(username, EnvironmentHelper.getVariable("JCLOUDS_PASSWORD").orElse(null)));
+		context = builder.build(BlobStoreContext.class);
+
 		getBlobStore().createContainerInLocation(null, containerName);
 	}
 
