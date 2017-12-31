@@ -4,40 +4,37 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 
 import javax.annotation.PostConstruct;
-import javax.inject.Inject;
 
 import org.jclouds.ContextBuilder;
 import org.jclouds.blobstore.BlobStore;
 import org.jclouds.blobstore.BlobStoreContext;
 import org.jclouds.blobstore.domain.Blob;
 import org.jclouds.io.Payload;
-import org.springframework.core.io.ResourceLoader;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
-import com.standardcheckout.web.helper.EnvironmentHelper;
 import com.standardcheckout.web.jclouds.BlobStoreService;
 
 @Service
 public class BlobStoreServiceImpl implements BlobStoreService {
 
 	private BlobStoreContext context;
-
-	private String containerName = EnvironmentHelper.getVariable("JCLOUDS_LOCATION").orElse("standardcheckout");
-
 	private Gson gson = new Gson(); // TODO inject
 
-	@Inject
-	private ResourceLoader resources;
+	@Value("${BUCKET_NAME:standardcheckout}")
+	private String containerName;
+
+	@Value("${JCLOUDS_PROVIDER:transient}")
+	private String jcloudsProvider;
 
 	@PostConstruct
 	public void createBucket() {
-		ContextBuilder builder = ContextBuilder.newBuilder(EnvironmentHelper.getVariable("JCLOUDS_PROVIDER").orElse("transient"));
-		EnvironmentHelper.getVariable("JCLOUDS_USERNAME").ifPresent(username ->
-			builder.credentials(username, EnvironmentHelper.getSecret(resources, "JCLOUDS_PASSWORD").orElse(null)));
-		context = builder.build(BlobStoreContext.class);
+		System.out.println(containerName);
+		context = ContextBuilder.newBuilder(jcloudsProvider)
+				.build(BlobStoreContext.class);
 
 		getBlobStore().createContainerInLocation(null, containerName);
 	}

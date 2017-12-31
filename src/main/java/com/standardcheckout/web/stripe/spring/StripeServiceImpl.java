@@ -4,14 +4,13 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.annotation.PostConstruct;
-import javax.inject.Inject;
 
-import org.springframework.core.io.ResourceLoader;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.standardcheckout.web.helper.EnvironmentHelper;
 import com.standardcheckout.web.stripe.ChargeDetails;
 import com.standardcheckout.web.stripe.StripeService;
 import com.stripe.Stripe;
@@ -31,13 +30,12 @@ import com.stripe.net.RequestOptions;
 @Service
 public class StripeServiceImpl implements StripeService {
 
-	@Inject
-	private ResourceLoader resources;
+	@Value("${STRIPE_KEY}")
+	private String apiKey;
 
 	@PostConstruct
 	public void setupClientDefaults() {
 		Stripe.apiKey = getApiKey();
-		Stripe.clientId = getClientId();
 	}
 
 	@Override
@@ -61,13 +59,8 @@ public class StripeServiceImpl implements StripeService {
 	}
 
 	@Override
-	public String getClientId() {
-		return EnvironmentHelper.getVariable("STRIPE_CLIENT_ID").orElse(Stripe.clientId);
-	}
-
-	@Override
 	public String getApiKey() {
-		return EnvironmentHelper.getSecret(resources, "STRIPE_KEY").orElse(Stripe.apiKey);
+		return Optional.ofNullable(apiKey).orElse(Stripe.apiKey);
 	}
 
 	@Override

@@ -64,6 +64,12 @@
 		</dependency>
 
 		<dependency>
+			<groupId>org.apache.jclouds.labs</groupId>
+			<artifactId>google-cloud-storage</artifactId>
+			<version>${jclouds.version}</version>
+		</dependency>
+
+		<dependency>
 			<groupId>com.sk89q</groupId>
 			<artifactId>squirrelid</artifactId>
 			<version>0.1.0</version>

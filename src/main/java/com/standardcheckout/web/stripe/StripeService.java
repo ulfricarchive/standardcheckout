@@ -7,8 +7,6 @@ import com.stripe.model.Customer;
 
 public interface StripeService {
 
-	String getClientId();
-
 	String getApiKey();
 
 	String createConnectUrl(String session);
