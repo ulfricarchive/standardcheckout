@@ -25,7 +25,7 @@ public enum Country {
 	SINGAPORE("Singapore", "SG"),
 	SPAIN("Spain", "ES"),
 	SWEDEN("Sweden", "SE"),
-	UNITED_KINGDOM("United Kingdom", "UK");
+	UNITED_KINGDOM("United Kingdom", "GB");
 
 	private final String friendly;
 	private final String twoLetter;
