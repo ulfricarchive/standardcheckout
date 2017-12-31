@@ -6,7 +6,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
+import javax.inject.Inject;
 
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 
 import com.standardcheckout.web.helper.EnvironmentHelper;
@@ -29,12 +31,13 @@ import com.stripe.net.RequestOptions;
 @Service
 public class StripeServiceImpl implements StripeService {
 
+	@Inject
+	private ResourceLoader resources;
+
 	@PostConstruct
 	public void setupClientDefaults() {
-		//Stripe.apiKey = getApiKey(); // TODO CHANGE BACK
-		//Stripe.clientId = getClientId(); // TODO CHANGE BACK
-		Stripe.apiKey = "sk_test_Ty4j6Dg2VN8pomFxTE55TDUR";
-		Stripe.clientId = "ca_C1utFg1gieuA6KjrwjfOjnHqiYdjOcmv";
+		Stripe.apiKey = getApiKey();
+		Stripe.clientId = getClientId();
 	}
 
 	@Override
@@ -64,7 +67,7 @@ public class StripeServiceImpl implements StripeService {
 
 	@Override
 	public String getApiKey() {
-		return EnvironmentHelper.getVariable("STRIPE_KEY").orElse(Stripe.apiKey);
+		return EnvironmentHelper.getSecret(resources, "STRIPE_KEY").orElse(Stripe.apiKey);
 	}
 
 	@Override

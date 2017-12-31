@@ -13,4 +13,3 @@ manual_scaling:
 
 env_variables:
   JCLOUDS_PROVIDER: google-cloud-storage
-  

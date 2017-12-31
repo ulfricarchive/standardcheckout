@@ -4,12 +4,14 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 
 import javax.annotation.PostConstruct;
+import javax.inject.Inject;
 
 import org.jclouds.ContextBuilder;
 import org.jclouds.blobstore.BlobStore;
 import org.jclouds.blobstore.BlobStoreContext;
 import org.jclouds.blobstore.domain.Blob;
 import org.jclouds.io.Payload;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 
 import com.google.gson.Gson;
@@ -27,11 +29,14 @@ public class BlobStoreServiceImpl implements BlobStoreService {
 
 	private Gson gson = new Gson(); // TODO inject
 
+	@Inject
+	private ResourceLoader resources;
+
 	@PostConstruct
 	public void createBucket() {
 		ContextBuilder builder = ContextBuilder.newBuilder(EnvironmentHelper.getVariable("JCLOUDS_PROVIDER").orElse("transient"));
 		EnvironmentHelper.getVariable("JCLOUDS_USERNAME").ifPresent(username ->
-			builder.credentials(username, EnvironmentHelper.getVariable("JCLOUDS_PASSWORD").orElse(null)));
+			builder.credentials(username, EnvironmentHelper.getSecret(resources, "JCLOUDS_PASSWORD").orElse(null)));
 		context = builder.build(BlobStoreContext.class);
 
 		getBlobStore().createContainerInLocation(null, containerName);
