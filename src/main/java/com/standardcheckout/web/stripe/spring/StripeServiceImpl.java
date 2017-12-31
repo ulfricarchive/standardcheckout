@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 import javax.annotation.PostConstruct;
 
@@ -33,9 +32,13 @@ public class StripeServiceImpl implements StripeService {
 	@Value("${STRIPE_KEY}")
 	private String apiKey;
 
+	@Value("${STRIPE_CLIENT_ID}")
+	private String clientId;
+
 	@PostConstruct
 	public void setupClientDefaults() {
-		Stripe.apiKey = getApiKey();
+		Stripe.apiKey = apiKey;
+		Stripe.clientId = clientId;
 	}
 
 	@Override
@@ -56,11 +59,6 @@ public class StripeServiceImpl implements StripeService {
 			exception.printStackTrace(); // TODO error handling
 			return null;
 		}
-	}
-
-	@Override
-	public String getApiKey() {
-		return Optional.ofNullable(apiKey).orElse(Stripe.apiKey);
 	}
 
 	@Override
@@ -158,9 +156,7 @@ public class StripeServiceImpl implements StripeService {
 	}
 
 	private RequestOptions requestOptions() {
-		return RequestOptions.builder()
-				.setApiKey(getApiKey())
-				.build();
+		return RequestOptions.getDefault();
 	}
 
 }

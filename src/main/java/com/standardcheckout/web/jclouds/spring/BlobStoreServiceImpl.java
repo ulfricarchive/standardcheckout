@@ -30,10 +30,16 @@ public class BlobStoreServiceImpl implements BlobStoreService {
 	@Value("${JCLOUDS_PROVIDER:transient}")
 	private String jcloudsProvider;
 
+	@Value("${JCLOUDS_ID:none}")
+	private String jcloudsId;
+
+	@Value("${JCLOUDS_SECRET:}")
+	private String jcloudsSecret;
+
 	@PostConstruct
 	public void createBucket() {
-		System.out.println(containerName);
 		context = ContextBuilder.newBuilder(jcloudsProvider)
+				.credentials(jcloudsId, jcloudsSecret.replace("\\n", "\n"))
 				.build(BlobStoreContext.class);
 
 		getBlobStore().createContainerInLocation(null, containerName);
