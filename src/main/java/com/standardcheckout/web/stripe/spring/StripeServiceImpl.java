@@ -117,12 +117,12 @@ public class StripeServiceImpl implements StripeService {
 	private BigDecimal fee(Webstore webstore, BigDecimal cost) {
 		BigDecimal percentFeeRate = webstore.getSpecialFeePercentage();
 		if (percentFeeRate == null) {
-			percentFeeRate = BigDecimal.valueOf(0.03D);
+			percentFeeRate = BigDecimal.valueOf(0.005D);
 		}
 
 		BigDecimal centsFeeRate = webstore.getSpecialFeeCents();
 		if (percentFeeRate == null) {
-			percentFeeRate = BigDecimal.valueOf(0.1D);
+			percentFeeRate = BigDecimal.valueOf(0.07D);
 		}
 
 		BigDecimal percent = cost.multiply(percentFeeRate);
