@@ -99,7 +99,7 @@ public class ChargeController {
 		ChargeDetails details = new ChargeDetails();
 		details.setAmount(plan.getTotalCost());
 		details.setServerName(StringUtils.isEmpty(webstore.getFriendlyName()) ? webstore.getStoreId() : webstore.getFriendlyName());
-		details.setMerchantId(webstore.getStripeId());
+		details.setWebstore(webstore);
 		details.setItemName(charge.getItemName());
 		Charge stripeCharge = stripe.charge(customer.getStripeId(), details);
 		if (stripeCharge == null) {

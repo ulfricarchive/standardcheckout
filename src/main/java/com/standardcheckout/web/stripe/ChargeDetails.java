@@ -2,19 +2,21 @@ package com.standardcheckout.web.stripe;
 
 import java.math.BigDecimal;
 
+import com.standardcheckout.web.webstore.Webstore;
+
 public class ChargeDetails {
 
-	private String merchantId;
+	private Webstore webstore;
 	private BigDecimal amount;
 	private String serverName;
 	private String itemName;
 
-	public String getMerchantId() {
-		return merchantId;
+	public Webstore getWebstore() {
+		return webstore;
 	}
 
-	public void setMerchantId(String merchantId) {
-		this.merchantId = merchantId;
+	public void setWebstore(Webstore webstore) {
+		this.webstore = webstore;
 	}
 
 	public BigDecimal getAmount() {

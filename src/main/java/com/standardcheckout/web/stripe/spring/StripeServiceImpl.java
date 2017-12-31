@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import com.standardcheckout.web.stripe.ChargeDetails;
 import com.standardcheckout.web.stripe.StripeService;
+import com.standardcheckout.web.webstore.Webstore;
 import com.stripe.Stripe;
 import com.stripe.exception.APIConnectionException;
 import com.stripe.exception.APIException;
@@ -90,7 +91,7 @@ public class StripeServiceImpl implements StripeService {
 	public Charge charge(String customerId, ChargeDetails details) {
 		RequestOptions options = requestOptions()
 				.toBuilder()
-				.setStripeAccount(details.getMerchantId())
+				.setStripeAccount(details.getWebstore().getStripeId())
 				.build();
 
 		String chargeToken = chargeToken(options, customerId);
@@ -99,7 +100,7 @@ public class StripeServiceImpl implements StripeService {
 		parameters.put("source", chargeToken == null ? customerId : chargeToken);
 		parameters.put("currency", "usd");
 		parameters.put("amount", bigDecimalToStripe(details.getAmount()));
-		parameters.put("application_fee", bigDecimalToStripe(fee(details.getAmount())));
+		parameters.put("application_fee", bigDecimalToStripe(fee(details.getWebstore(), details.getAmount())));
 		String descriptor = details.getItemName() + " on " + details.getServerName();
 		parameters.put("description", descriptor);
 		parameters.put("statement_descriptor", descriptor);
@@ -113,10 +114,19 @@ public class StripeServiceImpl implements StripeService {
 		}
 	}
 
-	private BigDecimal fee(BigDecimal cost) {
-		BigDecimal percent = cost.multiply(BigDecimal.valueOf(0.03D));
-		BigDecimal cents = BigDecimal.valueOf(0.1D);
-		return percent.max(cents).min(cost.multiply(BigDecimal.valueOf(0.3D)));
+	private BigDecimal fee(Webstore webstore, BigDecimal cost) {
+		BigDecimal percentFeeRate = webstore.getSpecialFeePercentage();
+		if (percentFeeRate == null) {
+			percentFeeRate = BigDecimal.valueOf(0.03D);
+		}
+
+		BigDecimal centsFeeRate = webstore.getSpecialFeeCents();
+		if (percentFeeRate == null) {
+			percentFeeRate = BigDecimal.valueOf(0.1D);
+		}
+
+		BigDecimal percent = cost.multiply(percentFeeRate);
+		return percent.max(centsFeeRate).min(cost.multiply(BigDecimal.valueOf(0.3D)));
 	}
 
 	private String bigDecimalToStripe(BigDecimal value) {

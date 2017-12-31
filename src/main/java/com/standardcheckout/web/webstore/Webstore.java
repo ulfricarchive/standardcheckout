@@ -1,18 +1,11 @@
 package com.standardcheckout.web.webstore;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 import com.standardcheckout.web.security.PasswordProtected;
 
 public class Webstore extends PasswordProtected {
-
-	public String getStripeId() {
-		return stripeId;
-	}
-
-	public void setStripeId(String stripeId) {
-		this.stripeId = stripeId;
-	}
 
 	private String storeId;
 	private String theme;
@@ -23,6 +16,8 @@ public class Webstore extends PasswordProtected {
 	private String termsOfService;
 	private String friendlyName;
 	private String token;
+	private BigDecimal specialFeePercentage;
+	private BigDecimal specialFeeCents;
 
 	public String getTheme() {
 		return theme;
@@ -86,6 +81,30 @@ public class Webstore extends PasswordProtected {
 
 	public void setToken(String token) {
 		this.token = token;
+	}
+
+	public BigDecimal getSpecialFeePercentage() {
+		return specialFeePercentage;
+	}
+
+	public void setSpecialFeePercentage(BigDecimal specialFeePercentage) {
+		this.specialFeePercentage = specialFeePercentage;
+	}
+
+	public BigDecimal getSpecialFeeCents() {
+		return specialFeeCents;
+	}
+
+	public void setSpecialFeeCents(BigDecimal specialFeeCents) {
+		this.specialFeeCents = specialFeeCents;
+	}
+
+	public String getStripeId() {
+		return stripeId;
+	}
+
+	public void setStripeId(String stripeId) {
+		this.stripeId = stripeId;
 	}
 
 }
