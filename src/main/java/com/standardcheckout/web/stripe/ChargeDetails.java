@@ -10,6 +10,7 @@ public class ChargeDetails {
 	private BigDecimal amount;
 	private String serverName;
 	private String itemName;
+	private String referrer;
 
 	public Webstore getWebstore() {
 		return webstore;
@@ -41,6 +42,14 @@ public class ChargeDetails {
 
 	public void setItemName(String itemName) {
 		this.itemName = itemName;
+	}
+
+	public String getReferrer() {
+		return referrer;
+	}
+
+	public void setReferrer(String referrer) {
+		this.referrer = referrer;
 	}
 
 }

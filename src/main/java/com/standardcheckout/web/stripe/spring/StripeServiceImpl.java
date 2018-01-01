@@ -9,6 +9,7 @@ import javax.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import com.standardcheckout.web.stripe.ChargeDetails;
 import com.standardcheckout.web.stripe.StripeService;
@@ -104,6 +105,11 @@ public class StripeServiceImpl implements StripeService {
 		String descriptor = details.getItemName() + " on " + details.getServerName();
 		parameters.put("description", descriptor);
 		parameters.put("statement_descriptor", descriptor);
+		if (!StringUtils.isEmpty(details.getReferrer())) {
+			Map<String, String> metadata = new HashMap<>();
+			metadata.put("referrer", details.getReferrer());
+			parameters.put("metadata", metadata);
+		}
 
 		try {
 			return Charge.create(parameters, options);
