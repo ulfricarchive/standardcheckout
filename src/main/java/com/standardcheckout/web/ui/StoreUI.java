@@ -38,7 +38,6 @@ import com.stripe.model.ExternalAccountCollection;
 import com.vaadin.annotations.Title;
 import com.vaadin.server.ExternalResource;
 import com.vaadin.server.VaadinRequest;
-import com.vaadin.shared.ui.MarginInfo;
 import com.vaadin.shared.ui.ValueChangeMode;
 import com.vaadin.spring.annotation.SpringUI;
 import com.vaadin.ui.Alignment;
@@ -556,16 +555,27 @@ public class StoreUI extends ScoUI {
 		String cardNumber = "•••• " + (last4 == null ? "" : last4);
 		cardNumber = cardNumber.trim();
 		String expires = prefixedDate(card.getExpMonth()) + "/" + prefixedDate(card.getExpYear());
+		boolean prepaid = Objects.equals(card.getFunding(), "prepaid");
 
+		VerticalLayout cardTypeLayout = new VerticalLayout();
+		cardTypeLayout.setMargin(false);
+		cardTypeLayout.setSpacing(false);
 		Image cardTypeLabel = new Image();
 		cardTypeLabel.setSource(new CardTypeResource(cardType));
 		cardTypeLabel.setWidth("80px");
 		cardTypeLabel.setHeight("80px");
-		content.addComponent(cardTypeLabel);
+		cardTypeLayout.addComponent(cardTypeLabel);
+		if (prepaid) {
+			Label label = new Label("PREPAID");
+			label.addStyleName(ValoTheme.LABEL_TINY);
+			label.addStyleName("prepaid");
+			cardTypeLayout.addComponent(label);
+			cardTypeLayout.setComponentAlignment(label, Alignment.TOP_CENTER);
+		}
+		content.addComponent(cardTypeLayout);
 
 		VerticalLayout cardData = new VerticalLayout();
-		MarginInfo margin = new MarginInfo(false, false, false, false);
-		cardData.setMargin(margin);
+		cardData.setMargin(false);
 		cardData.setSpacing(false);
 		Label cardOnFileTitle = new Label("Card on File");
 		cardOnFileTitle.addStyleName(ValoTheme.LABEL_LARGE);
