@@ -23,6 +23,7 @@ import com.standardcheckout.web.helper.StringHelper;
 import com.standardcheckout.web.mojang.MojangService;
 import com.standardcheckout.web.stripe.CardType;
 import com.standardcheckout.web.stripe.Country;
+import com.standardcheckout.web.stripe.CustomerHelper;
 import com.standardcheckout.web.stripe.StripeService;
 import com.standardcheckout.web.vaadin.addons.CardTypeResource;
 import com.standardcheckout.web.vaadin.addons.CountryFlagResource;
@@ -31,10 +32,13 @@ import com.standardcheckout.web.webstore.CustomersService;
 import com.standardcheckout.web.webstore.MinecraftCustomer;
 import com.standardcheckout.web.webstore.Webstore;
 import com.standardcheckout.web.webstore.WebstoreService;
+import com.stripe.model.Card;
 import com.stripe.model.Customer;
+import com.stripe.model.ExternalAccountCollection;
 import com.vaadin.annotations.Title;
 import com.vaadin.server.ExternalResource;
 import com.vaadin.server.VaadinRequest;
+import com.vaadin.shared.ui.MarginInfo;
 import com.vaadin.shared.ui.ValueChangeMode;
 import com.vaadin.spring.annotation.SpringUI;
 import com.vaadin.ui.Alignment;
@@ -45,6 +49,7 @@ import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.Image;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.Notification;
+import com.vaadin.ui.Panel;
 import com.vaadin.ui.TextField;
 import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.themes.ValoTheme;
@@ -199,6 +204,17 @@ public class StoreUI extends ScoUI {
 		if (StringUtils.isEmpty(player.getStripeId())) {
 			flowEnterCreditCard(player);
 			return;
+		}
+
+		Customer customer = stripe.getCustomer(player.getStripeId());
+		if (customer == null) {
+			flowEnterCreditCard(player);
+			return;
+		}
+
+		ExternalAccountCollection sources = customer.getSources();
+		if (sources == null) {
+			
 		}
 
 		flowAuthorize(player);
@@ -492,6 +508,16 @@ public class StoreUI extends ScoUI {
 		billingField.setValue(player.getBillingEnabled());
 		sendComponentMiddle(billingField);
 
+		Panel cardOnFile = getCardOnFile(customer);
+		if (cardOnFile != null) {
+			float width = cardOnFile.getWidth();
+			Unit widthUnits = cardOnFile.getWidthUnits();
+			sendComponentMiddle(cardOnFile);
+			if (width != -1) {
+				cardOnFile.setWidth(width, widthUnits);
+			}
+		}
+
 		sendFriendlyButtonMiddle("Update", click -> {
 			if (!Objects.equals(emailField.getValue(), customer.getEmail())) {
 				if (StringUtils.isEmpty(emailField.getValue())) {
@@ -513,6 +539,54 @@ public class StoreUI extends ScoUI {
 
 			sendSuccessNotice("Account updated");
 		});
+	}
+
+	private Panel getCardOnFile(Customer customer) {
+		Card card = CustomerHelper.getCardOnFile(customer);
+		if (card == null) {
+			return null;
+		}
+
+		Panel panel = new Panel();
+		panel.setWidth("206px");
+		HorizontalLayout content = new HorizontalLayout();
+
+		CardType cardType = CardType.fromName(card.getBrand());
+		String last4 = StringUtils.isEmpty(card.getLast4()) ? card.getDynamicLast4() : card.getLast4();
+		String cardNumber = "•••• " + (last4 == null ? "" : last4);
+		cardNumber = cardNumber.trim();
+		String expires = prefixedDate(card.getExpMonth()) + "/" + prefixedDate(card.getExpYear());
+
+		Image cardTypeLabel = new Image();
+		cardTypeLabel.setSource(new CardTypeResource(cardType));
+		cardTypeLabel.setWidth("80px");
+		cardTypeLabel.setHeight("80px");
+		content.addComponent(cardTypeLabel);
+
+		VerticalLayout cardData = new VerticalLayout();
+		MarginInfo margin = new MarginInfo(false, false, false, false);
+		cardData.setMargin(margin);
+		cardData.setSpacing(false);
+		Label cardOnFileTitle = new Label("Card on File");
+		cardOnFileTitle.addStyleName(ValoTheme.LABEL_LARGE);
+		cardData.addComponent(cardOnFileTitle);
+		Label cardNumberLabel = new Label(cardNumber);
+		cardNumberLabel.addStyleName(ValoTheme.LABEL_LARGE);
+		cardNumberLabel.addStyleName(ValoTheme.LABEL_LIGHT);
+		cardData.addComponent(cardNumberLabel);
+		Label expiresLabel = new Label("Expires " + expires);
+		expiresLabel.addStyleName(ValoTheme.LABEL_SMALL);
+		expiresLabel.addStyleName(ValoTheme.LABEL_LIGHT);
+		cardData.addComponent(expiresLabel);
+		content.addComponent(cardData);
+
+		panel.setContent(content);
+		return panel;
+	}
+
+	private String prefixedDate(Integer date) {
+		int dateInt = date == null ? 1 : date;
+		return dateInt < 10 ? "0" + dateInt : String.valueOf(dateInt);
 	}
 
 	private UUID attemptToGetUniqueId(TextField field) {

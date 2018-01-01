@@ -25,6 +25,18 @@ public enum CardType {
 		}
 	}
 
+	public static CardType fromName(String name) {
+		if (name == null) {
+			return null;
+		}
+
+		try {
+			return valueOf(name.replace(' ', '_').trim().toUpperCase());
+		} catch (Exception thatsOk) {
+			return null;
+		}
+	}
+
 	public static CardType detect(String card) {
 		if (card == null) {
 			return null;
