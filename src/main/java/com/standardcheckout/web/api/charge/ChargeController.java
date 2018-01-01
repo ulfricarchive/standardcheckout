@@ -21,9 +21,9 @@ import com.standardcheckout.web.webstore.MinecraftCustomer;
 import com.standardcheckout.web.webstore.Webstore;
 import com.standardcheckout.web.webstore.WebstoreService;
 import com.stripe.model.Charge;
-import com.ulfric.buycraft.sco.model.StandardCheckoutError;
 import com.ulfric.buycraft.sco.model.StandardCheckoutChargeRequest;
 import com.ulfric.buycraft.sco.model.StandardCheckoutChargeResponse;
+import com.ulfric.buycraft.sco.model.StandardCheckoutError;
 
 @RestController
 @RequestMapping("/api/charge")
@@ -41,9 +41,8 @@ public class ChargeController {
 	@Inject
 	private WebstoreService webstores;
 
-	@ResponseBody
 	@PostMapping(produces = "application/json", consumes = "application/json")
-	public StandardCheckoutChargeResponse charge(@RequestBody StandardCheckoutChargeRequest charge) {
+	public @ResponseBody StandardCheckoutChargeResponse charge(@RequestBody StandardCheckoutChargeRequest charge) {
 		StandardCheckoutChargeResponse response = new StandardCheckoutChargeResponse();
 
 		if (StringUtils.isEmpty(charge.getBuycraftToken()) && charge.getCart() != null) {
