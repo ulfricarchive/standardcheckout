@@ -61,8 +61,13 @@ public class ChargeController {
 			return response;
 		}
 
-		if (charge.getCart() == null) {
-			response.setError(StandardCheckoutError.MISSING_CART);
+		if (charge.getCart() == null && charge.getPrice() == null) {
+			response.setError(StandardCheckoutError.MISSING_CART_OR_PRICE);
+			return response;
+		}
+
+		if (charge.getCart() != null && charge.getPrice() != null) {
+			response.setError(StandardCheckoutError.CART_AND_PRICE_PRESENT);
 			return response;
 		}
 
@@ -90,14 +95,27 @@ public class ChargeController {
 			return response;
 		}
 
-		ManualPaymentPlan plan = buycraft.asManualPayments(charge.getCart(), charge.getBuycraftToken());
-		if (plan == null || BigDecimal.ZERO.compareTo(plan.getTotalCost()) == 0) {
-			response.setError(StandardCheckoutError.INCORRECT_BUYCRAFT_TOKEN);
-			return response;
+		ManualPaymentPlan plan;
+		if (charge.getCart() != null) {
+			plan = buycraft.asManualPayments(charge.getCart(), charge.getBuycraftToken());
+			if (plan == null || BigDecimal.ZERO.compareTo(plan.getTotalCost()) == 0) {
+				response.setError(StandardCheckoutError.INCORRECT_BUYCRAFT_TOKEN);
+				return response;
+			}
+		} else {
+			plan = null;
 		}
 
 		ChargeDetails details = new ChargeDetails();
-		details.setAmount(plan.getTotalCost());
+		details.setAmount(plan == null ? charge.getPrice() : plan.getTotalCost());
+		if (details.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+			response.setError(StandardCheckoutError.INVALID_PRICE);
+			return response;
+		}
+		if (details.getAmount().compareTo(BigDecimal.valueOf(500)) == -1) {
+			response.setError(StandardCheckoutError.PRICE_TOO_HIGH);
+			return response;
+		}
 		details.setServerName(StringUtils.isEmpty(webstore.getFriendlyName()) ? webstore.getStoreId() : webstore.getFriendlyName());
 		details.setWebstore(webstore);
 		details.setItemName(charge.getItemName());
@@ -105,6 +123,20 @@ public class ChargeController {
 		if (stripeCharge == null) {
 			response.setError(StandardCheckoutError.PAYMENT_FAILED);
 			return response;
+		}
+
+		if (plan != null) {
+			try {
+				for (Boolean success : buycraft.process(plan, charge.getBuycraftToken())) {
+					if (Boolean.FALSE.equals(success)) {
+						response.setError(StandardCheckoutError.BUYCRAFT_ERROR_ADDING);
+						break;
+					}
+				}
+			} catch (Exception exception) {
+				exception.printStackTrace(); // TODO exception handling
+				response.setError(StandardCheckoutError.BUYCRAFT_ERROR);
+			}
 		}
 
 		response.setState(true);
