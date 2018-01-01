@@ -46,7 +46,7 @@ public class ChargeController {
 	public StandardCheckoutChargeResponse charge(@RequestBody StandardCheckoutChargeRequest charge) {
 		StandardCheckoutChargeResponse response = new StandardCheckoutChargeResponse();
 
-		if (StringUtils.isEmpty(charge.getBuycraftToken())) {
+		if (StringUtils.isEmpty(charge.getBuycraftToken()) && charge.getCart() != null) {
 			response.setError(StandardCheckoutError.MISSING_BUYCRAFT_TOKEN);
 			return response;
 		}
