@@ -116,7 +116,7 @@ public class StoreUI extends ScoUI {
 		questionAndAnswer("Pricing", "0.5% or $0.7 from each transaction, whichever is higher, capped at 30% of the transaction. " +
 				"Examples: $20 purchase = $0.10 fee.  $1 purchase = $0.07 (min of $0.07 fee). $0.15 purchase = $0.045 (rounded up to $0.05, cap of 30%).");
 		questionAndAnswer("How is card data stored?", "Card data is not stored on our servers. We use Stripe for tokenization.");
-		questionAndAnswer("Do you compete with Buycraft?", "No. SCO is an extension to the Buycraft platform - it's a dependency.");
+		questionAndAnswer("Do you compete with Buycraft?", "Not necessarily. SCO can act as an extension to the Buycraft platform, or it can run on it's own, or any combination of the two.");
 		questionAndAnswer("How does it work?", "Say you want to sell an item in-game, like a crate key. " +
 				"Ideally the purchasing player would just click the key in the crate, and maybe a confirmation button. " +
 				"Our mission is to make that happen. The first time a player makes a purchase through SCO, they'll be " +
@@ -127,6 +127,7 @@ public class StoreUI extends ScoUI {
 
 	private void questionAndAnswer(String question, String answer) {
 		Label answerLabel = new Label(answer);
+		answerLabel.addStyleName(ValoTheme.LABEL_SMALL);
 		answerLabel.setVisible(false);
 
 		Button button = new Button(question);
@@ -419,7 +420,7 @@ public class StoreUI extends ScoUI {
 
 			if (customer == null) {
 				click.getButton().setEnabled(true);
-				sendError(zipCodeField, "You must enter a valid debit or credit card");
+				sendError("You must enter a valid debit or credit card");
 				return;
 			}
 
