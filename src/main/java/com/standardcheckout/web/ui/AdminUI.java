@@ -76,7 +76,7 @@ public class AdminUI extends ScoUI {
 				return null;
 			}
 
-			return () -> flowPassword(trimmedValue);
+			return () -> flowPassword(trimmedValue.toLowerCase());
 		});
 	}
 
