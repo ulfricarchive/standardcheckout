@@ -121,7 +121,7 @@ public class StripeServiceImpl implements StripeService {
 		}
 
 		BigDecimal centsFeeRate = webstore.getSpecialFeeCents();
-		if (percentFeeRate == null) {
+		if (centsFeeRate == null) {
 			percentFeeRate = BigDecimal.valueOf(0.07D);
 		}
 
