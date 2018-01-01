@@ -13,6 +13,7 @@ import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -152,7 +153,8 @@ public class BuycraftServiceImpl implements BuycraftService {
 		HttpHeaders headers = new HttpHeaders();
 		headers.add("X-Buycraft-Secret", token);
 		HttpEntity<Object> entity = new HttpEntity<>(request, headers);
-		return restTemplate.exchange(URL + endpoint, HttpMethod.GET, entity, String.class).getStatusCodeValue() == 204;
+		ResponseEntity<String> response = restTemplate.exchange(URL + endpoint, HttpMethod.POST, entity, String.class);
+		return response.getStatusCodeValue() == 204;
 	}
 
 }
