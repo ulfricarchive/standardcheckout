@@ -24,6 +24,7 @@ import com.vaadin.ui.Alignment;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.CheckBox;
 import com.vaadin.ui.Component;
+import com.vaadin.ui.CssLayout;
 import com.vaadin.ui.GridLayout;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.Notification;
@@ -291,15 +292,18 @@ public abstract class ScoUI extends UI {
 		termsOfService.center();
 		termsOfService.addBlurListener(blur -> termsOfService.close());
 
-		CheckBox termsOfServiceField = new CheckBox("I agree to the Terms and Conditions");
-		termsOfServiceField.addValueChangeListener(change -> {
-			if (!Boolean.TRUE.equals(change.getOldValue())) {
-				addWindow(termsOfService);
-				termsOfService.focus();
-			}
+		CssLayout termsOfServiceFields = new CssLayout();
+		termsOfServiceFields.setStyleName(ValoTheme.LAYOUT_COMPONENT_GROUP);
+		CheckBox termsOfServiceField = new CheckBox("I agree to the ");
+		Button button = new Button(" Terms of Service", click -> {
+			addWindow(termsOfService);
+			termsOfService.focus();
 		});
+		button.addStyleName(ValoTheme.BUTTON_BORDERLESS_COLORED);
+		button.addStyleName("termsbutton");
+		termsOfServiceFields.addComponents(termsOfServiceField, button);
 
-		sendComponentMiddle(termsOfServiceField);
+		sendComponentMiddle(termsOfServiceFields);
 		return termsOfServiceField;
 	}
 
