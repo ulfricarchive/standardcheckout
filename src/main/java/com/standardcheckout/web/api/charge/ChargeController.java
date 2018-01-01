@@ -112,7 +112,7 @@ public class ChargeController {
 			response.setError(StandardCheckoutError.INVALID_PRICE);
 			return response;
 		}
-		if (details.getAmount().compareTo(BigDecimal.valueOf(500)) == -1) {
+		if (details.getAmount().compareTo(BigDecimal.valueOf(500)) == 1) {
 			response.setError(StandardCheckoutError.PRICE_TOO_HIGH);
 			return response;
 		}
