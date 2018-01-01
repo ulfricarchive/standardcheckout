@@ -13,13 +13,11 @@ import org.springframework.util.StringUtils;
 
 import com.standardcheckout.web.vaadin.addons.EnterShortcut;
 import com.vaadin.annotations.Theme;
-import com.vaadin.icons.VaadinIcons;
 import com.vaadin.server.ErrorMessage;
 import com.vaadin.server.UserError;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.server.VaadinService;
 import com.vaadin.shared.Position;
-import com.vaadin.shared.ui.ContentMode;
 import com.vaadin.shared.ui.ValueChangeMode;
 import com.vaadin.ui.AbstractComponent;
 import com.vaadin.ui.Alignment;
@@ -30,10 +28,10 @@ import com.vaadin.ui.GridLayout;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.Notification;
 import com.vaadin.ui.PasswordField;
-import com.vaadin.ui.PopupView;
 import com.vaadin.ui.TextField;
 import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
+import com.vaadin.ui.Window;
 import com.vaadin.ui.themes.ValoTheme;
 
 @Theme("standardcheckout")
@@ -274,28 +272,30 @@ public abstract class ScoUI extends UI {
 	}
 
 	protected CheckBox sendTermsOfService(String terms) {
-		VerticalLayout popupContent = new VerticalLayout();
-		popupContent.setMargin(true);
-		PopupView popup = new PopupView(null, popupContent);
-		popup.setHideOnMouseOut(false);
-		popup.setWidth("100%");
-		getGridSection(1, 0).addComponent(popup);
+		Window termsOfService = new Window("Terms of Service");
+		termsOfService.setHeight("75%");
+		termsOfService.setModal(true);
+		termsOfService.setResizable(false);
+		VerticalLayout subContent = new VerticalLayout();
+		termsOfService.setContent(subContent);
 
-		Button close = new Button(VaadinIcons.CLOSE);
-		close.addStyleName(ValoTheme.BUTTON_DANGER);
-		close.addClickListener(click -> popup.setPopupVisible(false));
+		for (String part : terms.split(Pattern.quote("\n"))) {
+			if (part.trim().isEmpty()) {
+				continue;
+			}
+			Label termsLabel = new Label(part);
+			termsLabel.setWidth("500px");
+			subContent.addComponent(termsLabel);
+		}
 
-		Label termsLabel = new Label(terms);
-		termsLabel.setContentMode(ContentMode.PREFORMATTED);
-
-		popupContent.addComponents(close, termsLabel);
-		popupContent.setComponentAlignment(close, Alignment.MIDDLE_CENTER);
+		termsOfService.center();
+		termsOfService.addBlurListener(blur -> termsOfService.close());
 
 		CheckBox termsOfServiceField = new CheckBox("I agree to the Terms and Conditions");
-
 		termsOfServiceField.addValueChangeListener(change -> {
 			if (!Boolean.TRUE.equals(change.getOldValue())) {
-				popup.setPopupVisible(true);
+				addWindow(termsOfService);
+				termsOfService.focus();
 			}
 		});
 
