@@ -28,4 +28,10 @@ public class WebstoreServiceImpl implements WebstoreService {
 		blobs.put("webstores/" + webstore.getStoreId(), webstore);
 	}
 
+	@Override
+	public Webstore getRefreshed(Webstore webstore) {
+		Webstore refreshed = getWebstore(webstore.getStoreId());
+		return refreshed == null ? webstore : refreshed;
+	}
+
 }

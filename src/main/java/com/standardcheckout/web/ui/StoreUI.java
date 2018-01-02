@@ -3,9 +3,9 @@ package com.standardcheckout.web.ui;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -16,12 +16,10 @@ import javax.inject.Inject;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.util.StringUtils;
 import org.vaadin.textfieldformatter.CreditCardFieldFormatter;
 
 import com.standardcheckout.web.helper.EnvironmentHelper;
-import com.standardcheckout.web.helper.StringHelper;
 import com.standardcheckout.web.mojang.MojangService;
 import com.standardcheckout.web.stripe.CardType;
 import com.standardcheckout.web.stripe.Country;
@@ -29,6 +27,7 @@ import com.standardcheckout.web.stripe.CustomerHelper;
 import com.standardcheckout.web.stripe.StripeService;
 import com.standardcheckout.web.vaadin.addons.CardTypeResource;
 import com.standardcheckout.web.vaadin.addons.CountryFlagResource;
+import com.standardcheckout.web.vaadin.addons.PasswordRequest;
 import com.standardcheckout.web.vaadin.addons.Tip;
 import com.standardcheckout.web.webstore.CustomersService;
 import com.standardcheckout.web.webstore.MinecraftCustomer;
@@ -36,6 +35,7 @@ import com.standardcheckout.web.webstore.Webstore;
 import com.standardcheckout.web.webstore.WebstoreService;
 import com.stripe.model.Card;
 import com.stripe.model.Customer;
+import com.stripe.model.ExternalAccount;
 import com.stripe.model.ExternalAccountCollection;
 import com.vaadin.annotations.Title;
 import com.vaadin.server.ExternalResource;
@@ -51,10 +51,8 @@ import com.vaadin.ui.Image;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.Notification;
 import com.vaadin.ui.Panel;
-import com.vaadin.ui.PasswordField;
 import com.vaadin.ui.TextField;
 import com.vaadin.ui.VerticalLayout;
-import com.vaadin.ui.Window;
 import com.vaadin.ui.themes.ValoTheme;
 
 @Title("Standard Checkout")
@@ -68,9 +66,6 @@ public class StoreUI extends ScoUI {
 
 	@Inject
 	private StripeService stripe;
-
-	@Inject
-	private PasswordEncoder encoder;
 
 	@Inject
 	private WebstoreService webstores;
@@ -158,127 +153,43 @@ public class StoreUI extends ScoUI {
 
 	private void flowPassword(UUID user) {
 		MinecraftCustomer player = customers.getCustomerByMojangId(user);
-		if (player == null || StringUtils.isEmpty(player.getPassword())) {
-			requestPassword("Create a Standard Checkout Password",
-					"Passwords must be at between 8 and 128 characters in length. This should NOT be the same as your Minecraft password!",
-					true, passwordField -> {
-						String value = passwordField.getValue();
-						if (!StringHelper.isInBounds(value, 8, 128)) {
-							sendError(passwordField, "Passwords must be between 8 and 128 characters");
-							return null;
-						}
+		boolean exists = player != null && !StringUtils.isEmpty(player.getPassword());
+		requestPassword(PasswordRequest.builder()
+				.title(exists ? "Standard Checkout password" : "Create a Standard Checkout password")
+				.hint(exists ? null : "Passwords must be at between 8 and 128 characters in length. This should NOT be the same as your Minecraft password!")
+				.showReset(exists)
+				.account(() -> {
+					MinecraftCustomer account = customers.getCustomerByMojangId(user);
+					if (account == null) {
+						account = new MinecraftCustomer();
+						account.setMojangId(user);
+					}
+					return account;
+				})
+				.callback((account, validated) -> {
+					MinecraftCustomer customer = (MinecraftCustomer) account;
+					if (!validated) {
+						customers.saveCustomer(customer);
+						return;
+					}
 
-						MinecraftCustomer createdPlayer = new MinecraftCustomer();
-						createdPlayer.setCreated(Instant.now());
-						createdPlayer.setMojangId(user);
-						createdPlayer.setPassword(encoder.encode(value));
-						customers.saveCustomer(createdPlayer);
+					if (customer.getMojangId() == null) {
+						customer.setMojangId(user);
+					}
 
-						return () -> flowLoggedIn(createdPlayer);
-					});
+					if (customer.getCreated() == null) {
+						customer.setCreated(Instant.now());
+					}
 
-			return;
-		}
-
-		if (player.getMojangId() == null) {
-			player.setMojangId(user);
-			customers.saveCustomer(player);
-		}
-
-		requestPassword("Standard Checkout Password", false, passwordField -> {
-			String value = passwordField.getValue();
-			if (StringUtils.isEmpty(value)) {
-				sendError(passwordField, "Your password is required");
-				return null;
-			}
-
-			if (!encoder.matches(value, player.getPassword())) {
-				// TODO error, captcha?
-				sendError(passwordField, "Your password is incorrect");
-				return null;
-			}
-
-			return () -> flowLoggedIn(player);
-		});
-
-		Button resetPassword = new Button("Reset your password");
-		resetPassword.addStyleName(ValoTheme.BUTTON_BORDERLESS_COLORED);
-		resetPassword.addStyleName(ValoTheme.BUTTON_SMALL);
-		resetPassword.addClickListener(click -> {
-			Window resetPasswordWindow = new Window("Password Reset");
-			resetPasswordWindow.setModal(true);
-			resetPasswordWindow.setResizable(false);
-			resetPasswordWindow.center();
-			VerticalLayout subContent = new VerticalLayout();
-			resetPasswordWindow.setContent(subContent);
-
-			Label explanationLabel1 = new Label("To reset your password, join the Minecraft server:");
-			explanationLabel1.setWidth("380px");
-
-			TextField ipField = new TextField();
-			ipField.setEnabled(false);
-			ipField.setValue("verify.standardcheckout.com");
-			ipField.addStyleName("serverip");
-			ipField.addStyleName(ValoTheme.TEXTFIELD_ALIGN_CENTER);
-			ipField.setSizeFull();
-
-			Label explanationLabel2 = new Label("You'll be given a code to reset your password");
-			explanationLabel2.addStyleName(ValoTheme.LABEL_LIGHT);
-			explanationLabel2.setWidth("380px");
-
-			TextField resetCode = new TextField("Password reset code");
-			resetCode.setPlaceholder("You get this from the Minecraft server");
-			resetCode.setSizeFull();
-
-			PasswordField newPassword = new PasswordField("New password");
-			newPassword.setSizeFull();
-
-			Button resetPasswordContinue = new Button("Continue");
-			resetPasswordContinue.setSizeFull();
-			resetPasswordContinue.addStyleName(ValoTheme.BUTTON_FRIENDLY);
-			resetPasswordContinue.addClickListener(confirmClick -> {
-				MinecraftCustomer fetched = customers.getCustomerByMojangId(player.getMojangId());
-				if (fetched == null || fetched.getPasswordResetToken() == null) {
-					sendError(ipField, "You must join the StandardCheckout server to reset your password");
-					return;
-				}
-
-				if (!Objects.equals(fetched.getPasswordResetToken().getCode(), resetCode.getValue())) {
-					sendError(resetCode, "You must enter a valid reset code");
-					return;
-				}
-
-				Long timestamp = fetched.getPasswordResetToken().getTimestamp();
-				if (timestamp != null && Instant.ofEpochMilli(timestamp).plus(10, ChronoUnit.MINUTES).isBefore(Instant.now())) {
-					sendError(resetCode, "Your reset code is expired. It must be used within 10 minutes!");
-					return;
-				}
-
-				String value = newPassword.getValue();
-				if (!StringHelper.isInBounds(value, 8, 128)) {
-					sendError(newPassword, "Passwords must be between 8 and 128 characters");
-					return;
-				}
-
-				fetched.setPasswordResetToken(null);
-				fetched.setPassword(encoder.encode(value));
-				customers.saveCustomer(fetched);
-
-				resetPasswordWindow.close();
-				clearCenter();
-
-				flowLoggedIn(player);
-			});
-
-			subContent.addComponents(explanationLabel1, ipField, explanationLabel2, resetCode, newPassword, resetPasswordContinue);
-
-			addWindow(resetPasswordWindow);
-			resetPasswordWindow.focus();
-		});
-		sendComponentUpper(resetPassword);
+					customers.saveCustomer(customer);
+					flowLoggedIn(customer);
+				})
+				.build());
 	}
 
 	private void flowLoggedIn(MinecraftCustomer player) {
+		clearCenter();
+
 		if (StringUtils.isEmpty(player.getStripeId())) {
 			flowEnterCreditCard(player);
 			return;
@@ -292,7 +203,20 @@ public class StoreUI extends ScoUI {
 
 		ExternalAccountCollection sources = customer.getSources();
 		if (sources == null) {
-			
+			flowEnterCreditCard(player);
+			return;
+		}
+
+		List<ExternalAccount> accounts = sources.getData();
+		if (accounts == null) {
+			flowEnterCreditCard(player);
+			return;
+		}
+
+		boolean found = accounts.stream().filter(Card.class::isInstance).findAny().isPresent();
+		if (!found) {
+			flowEnterCreditCard(player);
+			return;
 		}
 
 		flowAuthorize(player);

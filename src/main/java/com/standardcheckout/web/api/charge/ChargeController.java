@@ -5,6 +5,7 @@ import java.util.Objects;
 
 import javax.inject.Inject;
 
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -76,7 +77,7 @@ public class ChargeController {
 		}
 
 		Webstore webstore = webstores.getWebstore(charge.getWebstoreId());
-		if (webstore == null) {
+		if (webstore == null || BooleanUtils.isTrue(webstore.getAccountDisabled())) {
 			response.setError(StandardCheckoutError.INVALID_WEBSTORE);
 			return response;
 		}

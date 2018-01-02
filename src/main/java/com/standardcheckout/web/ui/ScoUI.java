@@ -1,5 +1,7 @@
 package com.standardcheckout.web.ui;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -7,18 +9,24 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
+import javax.inject.Inject;
 import javax.servlet.http.Cookie;
 
+import org.apache.commons.lang3.mutable.MutableObject;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.util.StringUtils;
 
+import com.standardcheckout.web.helper.StringHelper;
+import com.standardcheckout.web.security.PasswordProtected;
 import com.standardcheckout.web.vaadin.addons.EnterShortcut;
+import com.standardcheckout.web.vaadin.addons.PasswordRequest;
 import com.vaadin.annotations.Theme;
 import com.vaadin.server.ErrorMessage;
 import com.vaadin.server.UserError;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.server.VaadinService;
 import com.vaadin.shared.Position;
-import com.vaadin.shared.ui.ValueChangeMode;
 import com.vaadin.ui.AbstractComponent;
 import com.vaadin.ui.Alignment;
 import com.vaadin.ui.Button;
@@ -26,6 +34,7 @@ import com.vaadin.ui.CheckBox;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.CssLayout;
 import com.vaadin.ui.GridLayout;
+import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.Notification;
 import com.vaadin.ui.PasswordField;
@@ -34,6 +43,8 @@ import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.Window;
 import com.vaadin.ui.themes.ValoTheme;
+import com.wcs.wcslib.vaadin.widget.recaptcha.ReCaptcha;
+import com.wcs.wcslib.vaadin.widget.recaptcha.shared.ReCaptchaOptions;
 
 @Theme("standardcheckout")
 public abstract class ScoUI extends UI {
@@ -42,6 +53,15 @@ public abstract class ScoUI extends UI {
 
 	protected GridLayout root;
 	protected VerticalLayout center;
+
+	@Value("${RECAPTCHA_PUBLIC}")
+	private String recaptchaPublic;
+
+	@Value("$RECAPTCHA_PRIVATE")
+	private String recaptchaPrivate;
+
+	@Inject
+	private PasswordEncoder encoder;
 
 	@Override
 	protected void init(VaadinRequest request) {
@@ -113,54 +133,194 @@ public abstract class ScoUI extends UI {
 		field.addShortcutListener(new EnterShortcut("Continue", button::click));
 	}
 
-	protected void requestPassword(String title, boolean needsConfirmation, Function<PasswordField, Runnable> listener) {
-		requestPassword(title, null, needsConfirmation, listener);
-	}
+	protected void requestPassword(PasswordRequest request) { // TODO warn if capslock is enabled
+		HorizontalLayout passwordFields = new HorizontalLayout();
+		passwordFields.setSpacing(false);
 
-	protected void requestPassword(String title, String hint, boolean needsConfirmation, Function<PasswordField, Runnable> listener) {
-		PasswordField field = new PasswordField(title);
-		sendComponentMiddle(field);
-		if (!StringUtils.isEmpty(hint)) {
-			Label hintLabel = new Label(hint);
-			hintLabel.setHeight("50%");
+		MutableObject<TextField> passwordField = new MutableObject<>(new PasswordField(request.getTitle()));
+		passwordField.getValue().setWidth("100%");
+		passwordField.getValue().setMaxLength(128);
+
+		Button showButton = new Button("SHOW");
+		showButton.addStyleName(ValoTheme.BUTTON_BORDERLESS);
+
+		MutableObject<Button> continueButton = new MutableObject<>();
+		showButton.addClickListener(click -> {
+			TextField newPasswordField;
+			boolean shouldShow = click.getButton().getCaption().equals("HIDE");
+			if (shouldShow) {
+				click.getButton().setCaption("SHOW");
+				newPasswordField = new PasswordField(request.getTitle());
+			} else {
+				click.getButton().setCaption("HIDE");
+				newPasswordField = new TextField(request.getTitle());
+			}
+			newPasswordField.setValue(passwordField.getValue().getValue());
+			newPasswordField.setWidth("100%");
+			newPasswordField.setMaxLength(128);
+			passwordFields.replaceComponent(passwordField.getValue(), newPasswordField);
+			passwordField.setValue(newPasswordField);
+			newPasswordField.addShortcutListener(new EnterShortcut("Continue", continueButton.getValue()::click));
+			//passwordFields.setExpandRatio(newPasswordField, 1000F);
+		});
+
+		passwordFields.addComponents(passwordField.getValue(), showButton);
+		passwordFields.setComponentAlignment(showButton, Alignment.BOTTOM_CENTER);
+
+		passwordFields.setExpandRatio(passwordField.getValue(), 1000F);
+		passwordFields.setExpandRatio(showButton, 1F);
+
+		sendComponentMiddle(passwordFields);
+
+		if (request.getHint() != null) {
+			Label hintLabel = new Label(request.getHint());
+			hintLabel.addStyleName(ValoTheme.LABEL_SMALL);
+			hintLabel.addStyleName(ValoTheme.LABEL_LIGHT);
 			sendComponentUpper(hintLabel);
 		}
-		PasswordField confirmation = needsConfirmation ? new PasswordField("Confirm password") : null;
-		if (needsConfirmation) {
-			confirmation.setVisible(false);
-			sendComponentMiddle(confirmation);
-			field.setValueChangeMode(ValueChangeMode.EAGER);
-			field.addValueChangeListener(change -> confirmation.setVisible(true));
-		}
-		Button continueButton = sendContinueButton(click -> {
-			if (needsConfirmation && confirmation.isVisible()) {
-				if (!Objects.equals(field.getValue(), confirmation.getValue())) {
-					sendError(confirmation, "Password and confirmation must match");
-					click.getButton().setEnabled(true);
+
+		MutableObject<ReCaptcha> captcha = new MutableObject<>();
+
+		continueButton.setValue(sendContinueButton(click -> {
+			click.getButton().setEnabled(false);
+			try {
+				String password = passwordField.getValue().getValue();
+				String error = getPasswordError(password);
+				if (error != null) {
+					sendError(passwordField.getValue(), error);
 					return;
 				}
-			}
-			Runnable next = listener.apply(field);
-			if (next != null) {
-				clearCenter();
-				next.run();
-			} else {
+
+				ReCaptcha recaptcha = captcha.getValue();
+				if (recaptcha != null && !recaptcha.validate()) {
+					sendError("You must fill in the captcha");
+					recaptcha.reload();
+					return;
+				}
+
+				PasswordProtected account = request.getAccount().get();
+
+				int attempts = account.getFailedAttempts() == null ? 0 : account.getFailedAttempts();
+				if (attempts >= 3 && recaptcha == null) {
+					recaptcha = new ReCaptcha(recaptchaPrivate, new ReCaptchaOptions() {{
+						sitekey = recaptchaPublic;
+						theme = "light";
+					}});
+					captcha.setValue(recaptcha);
+					center.addComponentAsFirst(recaptcha);
+					center.setComponentAlignment(recaptcha, Alignment.MIDDLE_CENTER);
+				}
+
+				if (!StringUtils.isEmpty(account.getPassword())) {
+					if (!encoder.matches(password, account.getPassword())) {
+						account.setFailedAttempts(++attempts);
+						sendError(passwordField.getValue(), "Your password is incorrect");
+						request.getCallback().accept(account, false);
+						return;
+					}
+				} else {
+					account.setPassword(encoder.encode(password));
+				}
+
+				account.setLastLogin(Instant.now());
+				account.setFailedAttempts(0);
+				request.getCallback().accept(account, true);
+			} finally {
 				click.getButton().setEnabled(true);
 			}
-		});
-		if (needsConfirmation) {
-			confirmation.addShortcutListener(new EnterShortcut("Continue", continueButton::click));
-		}
-		field.addShortcutListener(new EnterShortcut("Continue", () -> {
-			if (needsConfirmation) {
-				if (!confirmation.isVisible()) {
-					confirmation.setVisible(true);
-				}
-				confirmation.focus();
-			} else {
-				continueButton.click();
-			}
 		}));
+
+		passwordField.getValue().addShortcutListener(new EnterShortcut("Continue", continueButton.getValue()::click));
+
+		if (request.getShowReset()) { // TODO allow webstores to reset their passwords by signing into their stripe account?
+			Button resetPassword = new Button("Reset your password");
+			resetPassword.addStyleName(ValoTheme.BUTTON_BORDERLESS_COLORED);
+			resetPassword.addStyleName(ValoTheme.BUTTON_SMALL);
+			resetPassword.addClickListener(click -> {
+				Window resetPasswordWindow = new Window("Password Reset");
+				resetPasswordWindow.setModal(true);
+				resetPasswordWindow.setResizable(false);
+				resetPasswordWindow.center();
+				VerticalLayout subContent = new VerticalLayout();
+				resetPasswordWindow.setContent(subContent);
+
+				Label explanationLabel1 = new Label("To reset your password, join the Minecraft server:");
+				explanationLabel1.setWidth("380px");
+
+				TextField ipField = new TextField();
+				ipField.setEnabled(false);
+				ipField.setValue("verify.standardcheckout.com");
+				ipField.addStyleName("serverip");
+				ipField.addStyleName(ValoTheme.TEXTFIELD_ALIGN_CENTER);
+				ipField.setSizeFull();
+
+				Label explanationLabel2 = new Label("You'll be given a code to reset your password");
+				explanationLabel2.addStyleName(ValoTheme.LABEL_LIGHT);
+				explanationLabel2.setWidth("380px");
+
+				TextField resetCode = new TextField("Password reset code");
+				resetCode.setPlaceholder("You get this from the Minecraft server");
+				resetCode.setSizeFull();
+
+				PasswordField newPassword = new PasswordField("New password");
+				newPassword.setSizeFull();
+
+				Button resetPasswordContinue = new Button("Continue");
+				resetPasswordContinue.setSizeFull();
+				resetPasswordContinue.addStyleName(ValoTheme.BUTTON_FRIENDLY);
+				resetPasswordContinue.addClickListener(confirmClick -> { // TODO add captcha to reset
+					PasswordProtected account = request.getAccount().get();
+					if (account == null || account.getPasswordResetToken() == null) {
+						sendError(ipField, "You must join the StandardCheckout server to reset your password");
+						return;
+					}
+
+					if (!Objects.equals(account.getPasswordResetToken().getCode(), resetCode.getValue())) {
+						sendError(resetCode, "You must enter a valid reset code");
+						return;
+					}
+
+					Long timestamp = account.getPasswordResetToken().getTimestamp();
+					if (timestamp != null && Instant.ofEpochMilli(timestamp).plus(10, ChronoUnit.MINUTES).isBefore(Instant.now())) {
+						sendError(resetCode, "Your reset code is expired. It must be used within 10 minutes!");
+						return;
+					}
+
+					String value = newPassword.getValue();
+					if (!StringHelper.isInBounds(value, 8, 128)) {
+						sendError(newPassword, "Passwords must be between 8 and 128 characters");
+						return;
+					}
+
+					account.setPasswordResetToken(null);
+					account.setPassword(encoder.encode(value));
+					account.setLastLogin(Instant.now());
+
+					resetPasswordWindow.close();
+					clearCenter();
+
+					request.getCallback().accept(account, true);
+				});
+
+				subContent.addComponents(explanationLabel1, ipField, explanationLabel2, resetCode, newPassword, resetPasswordContinue);
+
+				addWindow(resetPasswordWindow);
+				resetPasswordWindow.focus();
+			});
+			sendComponentUpper(resetPassword);
+		}
+	}
+
+	private String getPasswordError(String password) {
+		if (StringUtils.isEmpty(password)) {
+			return "You must enter a password";
+		}
+
+		if (!StringHelper.isInBounds(password, 8, 128)) {
+			return "Passwords must be between 8 and 128 characters";
+		}
+
+		return null;
 	}
 
 	protected Button sendContinueButton(Button.ClickListener listener) {

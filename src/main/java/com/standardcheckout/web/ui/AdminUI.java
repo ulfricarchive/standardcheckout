@@ -6,11 +6,10 @@ import java.util.regex.Pattern;
 
 import javax.inject.Inject;
 
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.util.StringUtils;
 
-import com.standardcheckout.web.helper.StringHelper;
 import com.standardcheckout.web.stripe.StripeService;
+import com.standardcheckout.web.vaadin.addons.PasswordRequest;
 import com.standardcheckout.web.webstore.Webstore;
 import com.standardcheckout.web.webstore.WebstoreService;
 import com.vaadin.annotations.Title;
@@ -36,9 +35,6 @@ public class AdminUI extends ScoUI {
 
 	@Inject
 	private StripeService stripe;
-
-	@Inject
-	private PasswordEncoder encoder;
 
 	@Override
 	protected void init(VaadinRequest request) {
@@ -82,58 +78,51 @@ public class AdminUI extends ScoUI {
 
 	protected void flowPassword(String webstoreId) {
 		Webstore existing = webstores.getWebstore(webstoreId);
-		if (existing == null || existing.getPassword() == null) {
-			requestPassword("Create a Webstore Password",
-					"Passwords must be at between 8 and 128 characters in length. This should NOT be the same as your Buycraft password!",
-					true, passwordField -> {
-						String value = passwordField.getValue();
-						if (!StringHelper.isInBounds(value, 8, 128)) {
-							sendError(passwordField, "Passwords must be between 8 and 128 characters");
-							return null;
-						}
+		boolean exists = existing != null && !StringUtils.isEmpty(existing.getPassword());
+		requestPassword(PasswordRequest.builder()
+				.title(exists ? "Webstore password" : "Create a Webstore Password")
+				.hint(exists ? null : "Passwords must be at between 8 and 128 characters in length. This should NOT be the same as your Buycraft or Stripe passwords!")
+				.account(() -> {
+					Webstore account = webstores.getWebstore(webstoreId);
+					if (account == null) {
+						account = new Webstore();
+						account.setStoreId(webstoreId);
+					}
+					return account;
+				})
+				.callback((account, validated) -> {
+					Webstore webstore = (Webstore) account;
+					if (!validated) {
+						webstores.saveWebstore(webstore);
+						return;
+					}
 
-						Webstore created = new Webstore();
-						created.setStoreId(webstoreId);
-						created.setPassword(encoder.encode(value));
-						created.setAuthorizationId(UUID.randomUUID());
-						created.setToken(generateToken());
-						created.setCreated(Instant.now());
-						webstores.saveWebstore(created);
+					if (StringUtils.isEmpty(webstore.getStoreId())) {
+						webstore.setStoreId(webstoreId);
+					}
 
-						return () -> flowLoggedIn(created);
-					});
+					if (webstore.getAuthorizationId() == null) {
+						webstore.setAuthorizationId(UUID.randomUUID());
+					}
 
-			return;
-		}
+					if (StringUtils.isEmpty(webstore.getToken())) {
+						webstore.setToken(generateToken());
+					}
 
-		if (StringUtils.isEmpty(existing.getStoreId())) {
-			existing.setStoreId(webstoreId);
-			webstores.saveWebstore(existing);
-		}
+					if (webstore.getCreated() == null) {
+						webstore.setCreated(Instant.now());
+					}
 
-		if (existing.getAuthorizationId() == null) {
-			existing.setAuthorizationId(UUID.randomUUID());
-			webstores.saveWebstore(existing);
-		}
+					webstores.saveWebstore(webstore);
 
-		requestPassword("Webstore Password", false, passwordField -> {
-			String value = passwordField.getValue();
-			if (StringUtils.isEmpty(value)) {
-				sendError(passwordField, "Your password is required");
-				return null;
-			}
-
-			if (!encoder.matches(value, existing.getPassword())) {
-				// TODO error, captcha?
-				sendError(passwordField, "Your password is incorrect");
-				return null;
-			}
-
-			return () -> flowLoggedIn(existing);
-		});
+					flowLoggedIn(webstore);
+				})
+				.build());
 	}
 
 	protected void flowLoggedIn(Webstore webstore) {
+		clearCenter();
+
 		if (webstore.getStripeId() == null) {
 			flowStripe(webstore);
 			return;

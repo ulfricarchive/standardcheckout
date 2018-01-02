@@ -10,6 +10,8 @@ public class PasswordProtected {
 	private Instant created;
 	private ResetToken passwordResetToken;
 	private Boolean accountDisabled;
+	private Integer failedAttempts;
+	private Instant lastLogin;
 
 	public String getPassword() {
 		return password;
@@ -41,6 +43,22 @@ public class PasswordProtected {
 
 	public void setAccountDisabled(Boolean accountDisabled) {
 		this.accountDisabled = accountDisabled;
+	}
+
+	public Integer getFailedAttempts() {
+		return failedAttempts;
+	}
+
+	public void setFailedAttempts(Integer failedAttempts) {
+		this.failedAttempts = failedAttempts;
+	}
+
+	public Instant getLastLogin() {
+		return lastLogin;
+	}
+
+	public void setLastLogin(Instant lastLogin) {
+		this.lastLogin = lastLogin;
 	}
 
 }
