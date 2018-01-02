@@ -3,6 +3,7 @@ package com.standardcheckout.web.ui;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -12,6 +13,7 @@ import java.util.UUID;
 
 import javax.inject.Inject;
 
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -49,8 +51,10 @@ import com.vaadin.ui.Image;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.Notification;
 import com.vaadin.ui.Panel;
+import com.vaadin.ui.PasswordField;
 import com.vaadin.ui.TextField;
 import com.vaadin.ui.VerticalLayout;
+import com.vaadin.ui.Window;
 import com.vaadin.ui.themes.ValoTheme;
 
 @Title("Standard Checkout")
@@ -168,8 +172,6 @@ public class StoreUI extends ScoUI {
 						createdPlayer.setCreated(Instant.now());
 						createdPlayer.setMojangId(user);
 						createdPlayer.setPassword(encoder.encode(value));
-						createdPlayer.setBillingEnabled(true);
-						createdPlayer.setReceiveEmails(true);
 						customers.saveCustomer(createdPlayer);
 
 						return () -> flowLoggedIn(createdPlayer);
@@ -198,6 +200,79 @@ public class StoreUI extends ScoUI {
 
 			return () -> flowLoggedIn(player);
 		});
+
+		Button resetPassword = new Button("Reset your password");
+		resetPassword.addStyleName(ValoTheme.BUTTON_BORDERLESS_COLORED);
+		resetPassword.addStyleName(ValoTheme.BUTTON_SMALL);
+		resetPassword.addClickListener(click -> {
+			Window resetPasswordWindow = new Window("Password Reset");
+			resetPasswordWindow.setModal(true);
+			resetPasswordWindow.setResizable(false);
+			resetPasswordWindow.center();
+			VerticalLayout subContent = new VerticalLayout();
+			resetPasswordWindow.setContent(subContent);
+
+			Label explanationLabel1 = new Label("To reset your password, join the Minecraft server:");
+			explanationLabel1.setWidth("380px");
+
+			TextField ipField = new TextField();
+			ipField.setEnabled(false);
+			ipField.setValue("verify.standardcheckout.com");
+			ipField.addStyleName("serverip");
+			ipField.addStyleName(ValoTheme.TEXTFIELD_ALIGN_CENTER);
+			ipField.setSizeFull();
+
+			Label explanationLabel2 = new Label("You'll be given a code to reset your password");
+			explanationLabel2.addStyleName(ValoTheme.LABEL_LIGHT);
+			explanationLabel2.setWidth("380px");
+
+			TextField resetCode = new TextField("Password reset code");
+			resetCode.setPlaceholder("You get this from the Minecraft server");
+			resetCode.setSizeFull();
+
+			PasswordField newPassword = new PasswordField("New password");
+			newPassword.setSizeFull();
+
+			Button resetPasswordContinue = new Button("Continue");
+			resetPasswordContinue.setSizeFull();
+			resetPasswordContinue.addStyleName(ValoTheme.BUTTON_FRIENDLY);
+			resetPasswordContinue.addClickListener(confirmClick -> {
+				MinecraftCustomer fetched = customers.getCustomerByMojangId(player.getMojangId());
+				if (fetched == null || fetched.getPasswordResetToken() == null) {
+					sendError(ipField, "You must join the StandardCheckout server to reset your password");
+					return;
+				}
+
+				if (!Objects.equals(fetched.getPasswordResetToken().getCode(), resetCode.getValue())) {
+					sendError(resetCode, "You must enter a valid reset code");
+					return;
+				}
+
+				Instant created = fetched.getPasswordResetToken().getCreated();
+				if (created != null && created.plus(10, ChronoUnit.MINUTES).isAfter(Instant.now())) {
+					sendError(resetCode, "Your reset code is expired. It must be used within 10 minutes!");
+					return;
+				}
+
+				String value = newPassword.getValue();
+				if (!StringHelper.isInBounds(value, 8, 128)) {
+					sendError(newPassword, "Passwords must be between 8 and 128 characters");
+					return;
+				}
+
+				fetched.setPasswordResetToken(null);
+				fetched.setPassword(encoder.encode(value));
+				customers.saveCustomer(fetched);
+
+				flowLoggedIn(player);
+			});
+
+			subContent.addComponents(explanationLabel1, ipField, explanationLabel2, resetCode, newPassword, resetPasswordContinue);
+
+			addWindow(resetPasswordWindow);
+			resetPasswordWindow.focus();
+		});
+		sendComponentUpper(resetPassword);
 	}
 
 	private void flowLoggedIn(MinecraftCustomer player) {
@@ -497,15 +572,11 @@ public class StoreUI extends ScoUI {
 		emailField.setValue(customer.getEmail());
 		sendComponentMiddle(emailField);
 
-		CheckBox subscribedField = new CheckBox("Receive emails from StandardCheckout");
-		subscribedField.setValue(player.getReceiveEmails());
-		sendComponentMiddle(subscribedField);
-
 		// TODO allow removing authorized servers
 		// TODO card management
 
 		CheckBox billingField = new CheckBox("Account active");
-		billingField.setValue(player.getBillingEnabled());
+		billingField.setValue(!BooleanUtils.isTrue(player.getAccountDisabled()));
 		sendComponentMiddle(billingField);
 
 		Panel cardOnFile = getCardOnFile(customer);
@@ -527,14 +598,13 @@ public class StoreUI extends ScoUI {
 
 				Map<String, Object> patch = new HashMap<>();
 				patch.put("email", emailField.getValue());
-				if (stripe.updateCustomer(customer, patch)) {
+				if (!stripe.updateCustomer(customer, patch)) {
 					sendError(emailField, "You must enter a valid email");
 					return;
 				}
 			}
 
-			player.setBillingEnabled(Boolean.TRUE.equals(billingField.getValue()));
-			player.setReceiveEmails(Boolean.TRUE.equals(subscribedField.getValue()));
+			player.setAccountDisabled(Boolean.FALSE.equals(billingField.getValue()));
 			customers.saveCustomer(player);
 
 			sendSuccessNotice("Account updated");

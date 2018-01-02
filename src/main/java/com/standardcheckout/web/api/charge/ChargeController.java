@@ -94,6 +94,11 @@ public class ChargeController {
 			return response;
 		}
 
+		if (Boolean.TRUE.equals(customer.getAccountDisabled())) {
+			response.setError(StandardCheckoutError.PAYER_ACCOUNT_DISABLED);
+			return response;
+		}
+
 		ManualPaymentPlan plan;
 		if (charge.getCart() != null) {
 			plan = buycraft.asManualPayments(charge.getCart(), charge.getBuycraftToken());

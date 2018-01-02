@@ -1,9 +1,11 @@
 package com.standardcheckout.web.helper;
 
+import org.springframework.util.StringUtils;
+
 public class StringHelper {
 
 	public static boolean isInBounds(String value, int lower, int upper) {
-		if (value == null) {
+		if (StringUtils.isEmpty(value)) {
 			return false;
 		}
 

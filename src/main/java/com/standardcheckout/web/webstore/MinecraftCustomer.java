@@ -10,8 +10,6 @@ public class MinecraftCustomer extends PasswordProtected {
 	private UUID mojangId;
 	private String stripeId;
 	private Set<UUID> authorizedWebstores;
-	private Boolean receiveEmails = true;
-	private Boolean billingEnabled = true;
 
 	public UUID getMojangId() {
 		return mojangId;
@@ -35,22 +33,6 @@ public class MinecraftCustomer extends PasswordProtected {
 
 	public void setAuthorizedWebstores(Set<UUID> authorizedWebstores) {
 		this.authorizedWebstores = authorizedWebstores;
-	}
-
-	public Boolean getReceiveEmails() {
-		return receiveEmails;
-	}
-
-	public void setReceiveEmails(Boolean receiveEmails) {
-		this.receiveEmails = receiveEmails;
-	}
-
-	public Boolean getBillingEnabled() {
-		return billingEnabled;
-	}
-
-	public void setBillingEnabled(Boolean billingEnabled) {
-		this.billingEnabled = billingEnabled;
 	}
 
 }
