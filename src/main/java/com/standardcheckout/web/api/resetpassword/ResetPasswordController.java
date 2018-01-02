@@ -21,7 +21,7 @@ import com.ulfric.buycraft.sco.model.StandardCheckoutResetRequest;
 @RequestMapping("/internal/resetpassword") // TODO use jwt instead of the 'admin token' system to authenticate
 public class ResetPasswordController {
 
-	@Value("{ADMIN_TOKEN}")
+	@Value("${ADMIN_TOKEN}")
 	private String adminToken;
 
 	@Inject
