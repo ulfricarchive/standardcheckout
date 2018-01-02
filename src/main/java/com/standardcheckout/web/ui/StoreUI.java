@@ -248,8 +248,8 @@ public class StoreUI extends ScoUI {
 					return;
 				}
 
-				Instant created = fetched.getPasswordResetToken().getCreated();
-				if (created != null && created.plus(10, ChronoUnit.MINUTES).isAfter(Instant.now())) {
+				Long timestamp = fetched.getPasswordResetToken().getTimestamp();
+				if (timestamp != null && Instant.ofEpochMilli(timestamp).plus(10, ChronoUnit.MINUTES).isBefore(Instant.now())) {
 					sendError(resetCode, "Your reset code is expired. It must be used within 10 minutes!");
 					return;
 				}
@@ -263,6 +263,9 @@ public class StoreUI extends ScoUI {
 				fetched.setPasswordResetToken(null);
 				fetched.setPassword(encoder.encode(value));
 				customers.saveCustomer(fetched);
+
+				resetPasswordWindow.close();
+				clearCenter();
 
 				flowLoggedIn(player);
 			});
