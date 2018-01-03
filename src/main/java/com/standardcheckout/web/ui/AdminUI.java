@@ -11,7 +11,7 @@ import org.springframework.util.StringUtils;
 import com.standardcheckout.web.stripe.StripeService;
 import com.standardcheckout.web.vaadin.addons.PasswordRequest;
 import com.standardcheckout.web.webstore.Webstore;
-import com.standardcheckout.web.webstore.WebstoreService;
+import com.standardcheckout.web.webstore.WebstoreRepository;
 import com.vaadin.annotations.Title;
 import com.vaadin.icons.VaadinIcons;
 import com.vaadin.server.VaadinRequest;
@@ -31,7 +31,7 @@ public class AdminUI extends ScoUI {
 	private static final Pattern ALPHA = Pattern.compile("[a-zA-Z]+");
 
 	@Inject
-	private WebstoreService webstores;
+	private WebstoreRepository webstores;
 
 	@Inject
 	private StripeService stripe;

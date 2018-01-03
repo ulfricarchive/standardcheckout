@@ -2,7 +2,7 @@ package com.standardcheckout.web.webstore;
 
 import java.util.UUID;
 
-public interface CustomersService {
+public interface CustomersRepository {
 
 	MinecraftCustomer getCustomerByMojangId(UUID mojangId);
 

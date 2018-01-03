@@ -1,10 +1,8 @@
 package com.standardcheckout.web.webstore;
 
-public interface WebstoreService {
+public interface WebstoreRepository {
 
 	Webstore getWebstore(String storeId);
-
-	Webstore getRefreshed(Webstore webstore);
 
 	void saveWebstore(Webstore webstore);
 

@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.standardcheckout.web.webstore.CustomersService;
+import com.standardcheckout.web.webstore.CustomersRepository;
 import com.standardcheckout.web.webstore.MinecraftCustomer;
 import com.ulfric.buycraft.sco.model.StandardCheckoutResetRequest;
 
@@ -25,7 +25,7 @@ public class ResetPasswordController {
 	private String adminToken;
 
 	@Inject
-	private CustomersService customers;
+	private CustomersRepository customers;
 
 	@PostMapping(consumes = "application/json")
 	public ResponseEntity<Void> charge(@RequestBody StandardCheckoutResetRequest charge) {

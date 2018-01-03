@@ -1,10 +1,6 @@
 package com.standardcheckout.web.jclouds;
 
-import org.jclouds.blobstore.BlobStore;
-
-public interface BlobStoreService {
-
-	BlobStore getBlobStore();
+public interface BlobRepository {
 
 	void put(String key, Object value);
 

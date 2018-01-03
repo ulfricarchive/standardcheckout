@@ -11,15 +11,15 @@ import org.jclouds.blobstore.BlobStoreContext;
 import org.jclouds.blobstore.domain.Blob;
 import org.jclouds.io.Payload;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Repository;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
-import com.standardcheckout.web.jclouds.BlobStoreService;
+import com.standardcheckout.web.jclouds.BlobRepository;
 
-@Service
-public class BlobStoreServiceImpl implements BlobStoreService {
+@Repository
+public class BlobRepositoryImpl implements BlobRepository {
 
 	private BlobStoreContext context;
 	private Gson gson = new Gson(); // TODO inject
@@ -68,7 +68,6 @@ public class BlobStoreServiceImpl implements BlobStoreService {
 		}
 	}
 
-	@Override
 	public BlobStore getBlobStore() {
 		return context.getBlobStore();
 	}

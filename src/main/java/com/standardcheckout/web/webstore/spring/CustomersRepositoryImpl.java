@@ -4,17 +4,17 @@ import java.util.UUID;
 
 import javax.inject.Inject;
 
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Repository;
 
-import com.standardcheckout.web.jclouds.BlobStoreService;
-import com.standardcheckout.web.webstore.CustomersService;
+import com.standardcheckout.web.jclouds.BlobRepository;
+import com.standardcheckout.web.webstore.CustomersRepository;
 import com.standardcheckout.web.webstore.MinecraftCustomer;
 
-@Service
-public class CustomersServiceImpl implements CustomersService {
+@Repository
+public class CustomersRepositoryImpl implements CustomersRepository {
 
 	@Inject
-	private BlobStoreService blobs;
+	private BlobRepository blobs;
 
 	@Override
 	public MinecraftCustomer getCustomerByMojangId(UUID mojangId) {

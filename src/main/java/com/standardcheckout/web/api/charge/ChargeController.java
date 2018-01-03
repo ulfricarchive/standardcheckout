@@ -17,10 +17,10 @@ import com.standardcheckout.web.buycraft.BuycraftService;
 import com.standardcheckout.web.buycraft.spring.ManualPaymentPlan;
 import com.standardcheckout.web.stripe.ChargeDetails;
 import com.standardcheckout.web.stripe.StripeService;
-import com.standardcheckout.web.webstore.CustomersService;
+import com.standardcheckout.web.webstore.CustomersRepository;
 import com.standardcheckout.web.webstore.MinecraftCustomer;
 import com.standardcheckout.web.webstore.Webstore;
-import com.standardcheckout.web.webstore.WebstoreService;
+import com.standardcheckout.web.webstore.WebstoreRepository;
 import com.stripe.model.Charge;
 import com.ulfric.buycraft.sco.model.StandardCheckoutChargeRequest;
 import com.ulfric.buycraft.sco.model.StandardCheckoutChargeResponse;
@@ -37,10 +37,10 @@ public class ChargeController {
 	private StripeService stripe;
 
 	@Inject
-	private CustomersService customers;
+	private CustomersRepository customers;
 
 	@Inject
-	private WebstoreService webstores;
+	private WebstoreRepository webstores;
 
 	@PostMapping(produces = "application/json", consumes = "application/json")
 	public @ResponseBody StandardCheckoutChargeResponse charge(@RequestBody StandardCheckoutChargeRequest charge) {

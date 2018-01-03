@@ -29,10 +29,10 @@ import com.standardcheckout.web.vaadin.addons.CardTypeResource;
 import com.standardcheckout.web.vaadin.addons.CountryFlagResource;
 import com.standardcheckout.web.vaadin.addons.PasswordRequest;
 import com.standardcheckout.web.vaadin.addons.Tip;
-import com.standardcheckout.web.webstore.CustomersService;
+import com.standardcheckout.web.webstore.CustomersRepository;
 import com.standardcheckout.web.webstore.MinecraftCustomer;
 import com.standardcheckout.web.webstore.Webstore;
-import com.standardcheckout.web.webstore.WebstoreService;
+import com.standardcheckout.web.webstore.WebstoreRepository;
 import com.stripe.model.Card;
 import com.stripe.model.Customer;
 import com.stripe.model.ExternalAccount;
@@ -68,10 +68,10 @@ public class StoreUI extends ScoUI {
 	private StripeService stripe;
 
 	@Inject
-	private WebstoreService webstores;
+	private WebstoreRepository webstores;
 
 	@Inject
-	private CustomersService customers;
+	private CustomersRepository customers;
 
 	@Inject
 	private ResourceLoader resources;
