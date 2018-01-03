@@ -1,4 +1,4 @@
-package com.standardcheckout.web.api.resetpassword;
+package com.standardcheckout.web.api.internal.resetpassword;
 
 import java.util.Objects;
 import java.util.UUID;
