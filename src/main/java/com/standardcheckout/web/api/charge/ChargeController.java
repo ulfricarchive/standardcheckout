@@ -24,6 +24,7 @@ import com.standardcheckout.web.webstore.WebstoreRepository;
 import com.stripe.model.Charge;
 import com.ulfric.buycraft.sco.model.StandardCheckoutChargeRequest;
 import com.ulfric.buycraft.sco.model.StandardCheckoutChargeResponse;
+import com.ulfric.buycraft.sco.model.StandardCheckoutChargeState;
 import com.ulfric.buycraft.sco.model.StandardCheckoutError;
 
 @RestController
@@ -88,15 +89,18 @@ public class ChargeController {
 		}
 
 		MinecraftCustomer customer = customers.getCustomerByMojangId(charge.getPurchaser());
-		if (customer == null ||
-				customer.getAuthorizedWebstores() == null ||
-				!customer.getAuthorizedWebstores().contains(webstore.getAuthorizationId())) {
-			response.setRequiresAuthorization(true);
+		if (customer == null || StringUtils.isEmpty(customer.getStripeId())) {
+			response.setState(StandardCheckoutChargeState.REQUIRES_PAYMENT_METHOD);
+			return response;
+		}
+
+		if (customer.getAuthorizedWebstores() == null || !customer.getAuthorizedWebstores().contains(webstore.getAuthorizationId())) {
+			response.setState(StandardCheckoutChargeState.REQUIRES_AUTHORIZATION);
 			return response;
 		}
 
 		if (Boolean.TRUE.equals(customer.getAccountDisabled())) {
-			response.setError(StandardCheckoutError.PAYER_ACCOUNT_DISABLED);
+			response.setState(StandardCheckoutChargeState.ACCOUNT_DISABLED);
 			return response;
 		}
 
@@ -126,7 +130,7 @@ public class ChargeController {
 		details.setItemName(charge.getItemName());
 		Charge stripeCharge = stripe.charge(customer.getStripeId(), details);
 		if (stripeCharge == null) {
-			response.setError(StandardCheckoutError.PAYMENT_FAILED);
+			response.setState(StandardCheckoutChargeState.DECLINED);
 			return response;
 		}
 
@@ -144,7 +148,7 @@ public class ChargeController {
 			}
 		}
 
-		response.setState(true);
+		response.setState(StandardCheckoutChargeState.SUCCESS);
 		return response;
 	}
 

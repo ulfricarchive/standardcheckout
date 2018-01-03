@@ -183,7 +183,7 @@ public class AdminUI extends ScoUI {
 
 		HorizontalLayout token = new HorizontalLayout();
 
-		TextField tokenData = new TextField("Token");
+		TextField tokenData = new TextField("Secret");
 		tokenData.setWidth("100%");
 		tokenData.setEnabled(false);
 		tokenData.setValue(webstore.getToken());
