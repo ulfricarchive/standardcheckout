@@ -112,7 +112,7 @@ public class StoreUI extends ScoUI {
 		label.addStyleName(ValoTheme.LABEL_LARGE);
 		center.addComponent(label);
 
-		questionAndAnswer("Pricing", "0.5% or $0.7 from each transaction, whichever is higher, capped at 30% of the transaction. " +
+		questionAndAnswer("Pricing", "0.5% or $0.07 from each transaction, whichever is higher, capped at 30% of the transaction. " +
 				"Examples: $20 purchase = $0.10 fee.  $1 purchase = $0.07 (min of $0.07 fee). $0.15 purchase = $0.045 (rounded up to $0.05, cap of 30%).");
 		questionAndAnswer("How is card data stored?", "Card data is not stored on our servers. We use Stripe for tokenization.");
 		questionAndAnswer("Do you compete with Buycraft?", "Not necessarily. SCO can act as an extension to the Buycraft platform, or it can run on it's own, or any combination of the two.");
